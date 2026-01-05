@@ -3,189 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - 穩定流金版</title>
+    <title>EMPIRE CRM - HOLY HAIR 限定版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --gold-bright: #fde68a; --gold-main: #d4af37; --gold-dark: #8e6d13; }
-        body { background-color: #050505; color: var(--gold-main); font-family: 'Noto Sans TC', sans-serif; }
+        :root { 
+            --gold-bright: #fde68a; 
+            --gold-main: #d4af37; 
+            --gold-dark: #8e6d13;
+            --bg-black: #050505;
+        }
         
-        .text-gradient-gold {
-            background: linear-gradient(to bottom, #fff6d5 0%, #d4af37 50%, #8e6d13 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        body { 
+            background-color: var(--bg-black); 
+            color: var(--gold-main); 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-image: radial-gradient(circle at top right, #1a150a, transparent);
+            min-height: 100vh;
         }
 
+        /* 漸層金屬字體 */
+        .text-gradient-gold {
+            background: linear-gradient(to bottom, #fff6d5 0%, #d4af37 50%, #8e6d13 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 毛玻璃質感卡片 */
         .glass-card {
             background: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(212, 175, 55, 0.2);
             border-radius: 24px;
         }
 
-        /* 儲存按鈕點擊動畫 */
-        .gold-btn-solid {
-            background: linear-gradient(to bottom, #fde68a, #d4af37);
-            color: #1a1100; font-weight: 900; padding: 16px;
-            border-radius: 14px; text-align: center; display: block; width: 100%;
-            transition: transform 0.1s, opacity 0.2s;
-            cursor: pointer; border: none;
+        /* 流動金光邊框 */
+        .flow-border {
+            position: relative;
+            padding: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-main), transparent);
+            background-size: 200% 100%;
+            animation: flow 4s linear infinite;
+            border-radius: 24px;
         }
-        .gold-btn-solid:active { transform: scale(0.96); opacity: 0.9; }
+        @keyframes flow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 實體金屬儲存按鈕 */
+        #btn-save {
+            background: linear-gradient(to bottom, #fde68a, #d4af37);
+            color: #1a1100;
+            font-weight: 900;
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            width: 100%;
+            border: none;
+            font-size: 1.1rem;
+            transition: transform 0.1s;
+        }
+        #btn-save:active { transform: scale(0.96); opacity: 0.9; }
 
         input, select {
             background: rgba(0,0,0,0.5) !important;
             border: 1px solid var(--gold-dark) !important;
             color: var(--gold-bright) !important;
-            padding: 16px !important; border-radius: 14px !important; width: 100%;
+            padding: 16px !important;
+            border-radius: 14px !important;
+            width: 100%;
+            outline: none;
         }
     </style>
 </head>
 <body class="p-5 pb-24">
 
-    <header class="py-10 text-center">
+    <header class="py-8 text-center">
         <h1 class="text-4xl font-black text-gradient-gold tracking-widest">EMPIRE CRM</h1>
-        <p id="status-text" class="text-[10px] text-yellow-900 mt-2 font-bold uppercase">系統連線中...</p>
+        <p id="sync-status" class="text-[10px] text-yellow-900 mt-2 font-bold uppercase tracking-tighter">Connecting to HolyHair Cloud...</p>
     </header>
 
-    <div class="glass-card p-6 mb-10 border-2 border-yellow-900/30">
-        <h2 class="text-lg font-bold mb-5 text-gradient-gold">＋ 尊榮客戶登錄</h2>
-        <div class="space-y-4">
-            <input type="text" id="name" placeholder="客戶尊稱 (必填)">
-            <input type="text" id="contact" placeholder="聯絡資訊 (電話/LINE)">
-            <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="course" placeholder="需求項目">
-                <input type="number" id="value" placeholder="預算金額">
+    <div class="flow-border mb-10">
+        <div class="glass-card p-6">
+            <h2 class="text-lg font-bold mb-5 text-gradient-gold text-center">＋ 尊榮客戶登錄</h2>
+            <div class="space-y-4">
+                <input type="text" id="ipt-name" placeholder="客戶尊稱 (必填)">
+                <input type="text" id="ipt-contact" placeholder="聯絡資訊 (電話/LINE)">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="ipt-course" placeholder="需求項目">
+                    <input type="number" id="ipt-value" placeholder="預算金額">
+                </div>
+                <select id="ipt-stage">
+                    <option value="lead">新開發階段 (LEAD)</option>
+                    <option value="contacted">洽談中階段 (DEAL)</option>
+                    <option value="won">成交紀錄 (WON)</option>
+                </select>
+                <button id="btn-save">確認寫入資料庫</button>
             </div>
-            <select id="stage">
-                <option value="lead">新開發階段 (LEAD)</option>
-                <option value="contacted">洽談中階段 (DEAL)</option>
-                <option value="won">成交紀錄 (WON)</option>
-            </select>
-            <button onclick="handleSave()" class="gold-btn-solid">確認寫入資料庫</button>
         </div>
     </div>
 
-    <div id="kanban" class="space-y-4">
-        </div>
+    <div id="kanban-display" class="space-y-6"></div>
 
     <script>
-        // 1. 請在此填寫您的正確配置
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-  measurementId: "G-XS22B43TYM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-        // 2. 初始化檢查
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            document.getElementById('status-text').innerText = "🟢 系統已就緒 (雲端模式)";
-        } catch (e) {
-            document.getElementById('status-text').innerText = "🔴 連線失敗，請檢查 Config";
-            console.error(e);
-        }
-
-        // 3. 儲存函數 (改名為 handleSave 避免衝突)
-        function handleSave() {
-            const nameEl = document.getElementById('name');
-            const contactEl = document.getElementById('contact');
-            const courseEl = document.getElementById('course');
-            const valueEl = document.getElementById('value');
-            const stageEl = document.getElementById('stage');
-
-            if (!nameEl.value) {
-                alert("請輸入客戶尊稱");
-                return;
-            }
-
-            const payload = {
-                name: nameEl.value,
-                contact: contactEl.value,
-                course: courseEl.value || "一般諮詢",
-                value: valueEl.value || 0,
-                stage: stageEl.value,
-                time: Date.now()
+        // 等待頁面與 SDK 載入
+        window.addEventListener('load', function() {
+            
+            // 1. 已植入您的 Firebase 金鑰
+            const firebaseConfig = {
+                apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
+                authDomain: "holyhairsalon-f73bf.firebaseapp.com",
+                databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
+                projectId: "holyhairsalon-f73bf",
+                storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
+                messagingSenderId: "960169055224",
+                appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
+                measurementId: "G-XS22B43TYM"
             };
 
-            // 執行寫入
-            db.ref('leads').push(payload)
-                .then(() => {
-                    alert("✨ 資料已成功寫入雲端");
-                    // 清空輸入框
-                    nameEl.value = '';
-                    contactEl.value = '';
-                    courseEl.value = '';
-                    valueEl.value = '';
-                })
-                .catch((error) => {
-                    alert("❌ 儲存失敗：" + error.message);
-                    console.error(error);
-                });
-        }
-
-        // 4. 即時渲染看板 (簡化版確保穩定)
-        db.ref('leads').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            const kanban = document.getElementById('kanban');
-            kanban.innerHTML = ''; // 清空
-
-            const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
-            
-            for (let s in stages) {
-                const filtered = Object.keys(data).filter(id => data[id].stage === s);
-                let html = `
-                    <div class="glass-card p-5">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-xl font-bold text-gradient-gold">${stages[s]}</span>
-                            <span class="bg-yellow-600 text-black px-2 py-1 rounded-md font-black text-sm">${filtered.length}</span>
-                        </div>
-                        <div class="space-y-3">
-                `;
-
-                filtered.forEach(id => {
-                    const item = data[id];
-                    html += `
-                        <div class="bg-black/30 p-4 rounded-xl border border-yellow-900/20">
-                            <div class="flex justify-between items-center">
-                                <span class="text-white text-lg font-bold">${item.name}</span>
-                                <span class="text-gradient-gold font-black">$${Number(item.value).toLocaleString()}</span>
-                            </div>
-                            <div class="text-xs text-yellow-800 mt-1 uppercase tracking-tighter">${item.course} | ${item.contact}</div>
-                            <button onclick="deleteItem('${id}')" class="text-[10px] text-red-900 mt-2 font-bold">移除紀錄</button>
-                        </div>
-                    `;
-                });
-
-                html += `</div></div>`;
-                kanban.innerHTML += html;
+            // 2. 初始化
+            let database;
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                database = firebase.database();
+                document.getElementById('sync-status').innerText = "🟢 HOLY HAIR 雲端同步中";
+            } catch (e) {
+                document.getElementById('sync-status').innerText = "🔴 連線失敗：請檢查網路";
             }
+
+            // 3. 儲存點擊監聽 (使用更穩定的 EventListener)
+            const saveBtn = document.getElementById('btn-save');
+            saveBtn.addEventListener('click', function() {
+                const name = document.getElementById('ipt-name').value;
+                if (!name) { alert("請輸入客戶尊稱"); return; }
+
+                const data = {
+                    name: name,
+                    contact: document.getElementById('ipt-contact').value || "未提供",
+                    course: document.getElementById('ipt-course').value || "專屬設計",
+                    value: document.getElementById('ipt-value').value || 0,
+                    stage: document.getElementById('ipt-stage').value,
+                    timestamp: Date.now()
+                };
+
+                saveBtn.disabled = true;
+                saveBtn.innerText = "同步中...";
+
+                database.ref('leads').push(data)
+                    .then(() => {
+                        alert("✨ 資料已安全存儲");
+                        document.getElementById('ipt-name').value = '';
+                        document.getElementById('ipt-contact').value = '';
+                        document.getElementById('ipt-course').value = '';
+                        document.getElementById('ipt-value').value = '';
+                    })
+                    .catch(err => alert("失敗：" + err.message))
+                    .finally(() => {
+                        saveBtn.disabled = false;
+                        saveBtn.innerText = "確認寫入資料庫";
+                    });
+            });
+
+            // 4. 渲染看板 (精品字體與排版)
+            database.ref('leads').on('value', (snapshot) => {
+                const val = snapshot.val() || {};
+                const display = document.getElementById('kanban-display');
+                display.innerHTML = '';
+
+                const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
+                
+                for (let s in stages) {
+                    const items = Object.keys(val).filter(id => val[id].stage === s);
+                    let html = `
+                        <div class="glass-card p-6">
+                            <div class="flex justify-between items-center mb-5">
+                                <span class="text-2xl font-black text-gradient-gold">${stages[s]}</span>
+                                <span class="bg-yellow-600 text-black px-3 py-1 rounded-lg font-black text-sm">${items.length}</span>
+                            </div>
+                            <div class="space-y-4">
+                    `;
+
+                    items.forEach(id => {
+                        const item = val[id];
+                        html += `
+                            <div class="bg-black/30 p-5 rounded-2xl border border-yellow-900/10">
+                                <div class="flex justify-between items-start">
+                                    <div class="text-2xl font-bold text-white">${item.name}</div>
+                                    <div class="text-2xl font-black text-gradient-gold">$${Number(item.value).toLocaleString()}</div>
+                                </div>
+                                <div class="text-sm text-yellow-800 mt-2 font-bold tracking-wider">${item.course} | ${item.contact}</div>
+                                <div class="mt-4 flex justify-end">
+                                    <button onclick="removeItem('${id}')" class="text-[10px] text-red-900 font-bold border border-red-900/30 px-2 py-1 rounded">移除</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div></div>`;
+                    display.innerHTML += html;
+                }
+            });
         });
 
-        function deleteItem(id) {
-            if(confirm('確定刪除？')) db.ref('leads').child(id).remove();
+        function removeItem(id) {
+            if(confirm('確定移除此筆紀錄？')) firebase.database().ref('leads').child(id).remove();
         }
     </script>
 </body>
 </html>
-
