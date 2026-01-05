@@ -3,216 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - HOLY HAIR 限定版</title>
+    <title>EMPIRE CRM - 智慧連動版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { 
-            --gold-bright: #fde68a; 
-            --gold-main: #d4af37; 
-            --gold-dark: #8e6d13;
-            --bg-black: #050505;
-        }
+        :root { --gold: #d4af37; --gold-bright: #fde68a; --bg: #050505; }
+        body { background: var(--bg); color: var(--gold); font-family: 'Noto Sans TC', sans-serif; }
         
-        body { 
-            background-color: var(--bg-black); 
-            color: var(--gold-main); 
-            font-family: 'Noto Sans TC', sans-serif; 
-            background-image: radial-gradient(circle at top right, #1a150a, transparent);
-            min-height: 100vh;
+        .text-gold {
+            background: linear-gradient(135deg, #fff6d5, #d4af37, #8e6d13);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* 漸層金屬字體 */
-        .text-gradient-gold {
-            background: linear-gradient(to bottom, #fff6d5 0%, #d4af37 50%, #8e6d13 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .glass-panel {
+            background: rgba(25, 25, 25, 0.7);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 20px;
+            margin-bottom: 12px;
+            overflow: hidden;
         }
 
-        /* 毛玻璃質感卡片 */
-        .glass-card {
-            background: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 24px;
+        .accordion-content {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.4s ease;
+            background: rgba(0, 0, 0, 0.4);
         }
 
-        /* 流動金光邊框 */
-        .flow-border {
-            position: relative;
-            padding: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold-main), transparent);
-            background-size: 200% 100%;
-            animation: flow 4s linear infinite;
-            border-radius: 24px;
-        }
-        @keyframes flow {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        .active .accordion-content { max-height: 500px; border-top: 1px solid rgba(212, 175, 55, 0.1); }
 
-        /* 實體金屬儲存按鈕 */
-        #btn-save {
+        .btn-gold {
             background: linear-gradient(to bottom, #fde68a, #d4af37);
-            color: #1a1100;
-            font-weight: 900;
-            padding: 18px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-            width: 100%;
-            border: none;
-            font-size: 1.1rem;
-            transition: transform 0.1s;
+            color: #1a1100; font-weight: 900; padding: 12px;
+            border-radius: 12px; border: none; font-size: 0.9rem;
         }
-        #btn-save:active { transform: scale(0.96); opacity: 0.9; }
 
         input, select {
             background: rgba(0,0,0,0.5) !important;
-            border: 1px solid var(--gold-dark) !important;
+            border: 1px solid #444 !important;
             color: var(--gold-bright) !important;
-            padding: 16px !important;
-            border-radius: 14px !important;
-            width: 100%;
-            outline: none;
+            padding: 12px !important; border-radius: 12px !important;
+            width: 100%; outline: none;
         }
+        .search-bar { border: 1px solid var(--gold) !important; background: rgba(212, 175, 55, 0.05) !important; }
     </style>
 </head>
-<body class="p-5 pb-24">
+<body class="p-4 pb-24">
 
-    <header class="py-8 text-center">
-        <h1 class="text-4xl font-black text-gradient-gold tracking-widest">EMPIRE CRM</h1>
-        <p id="sync-status" class="text-[10px] text-yellow-900 mt-2 font-bold uppercase tracking-tighter">Connecting to HolyHair Cloud...</p>
+    <header class="py-4 text-center">
+        <h1 class="text-3xl font-black text-gold tracking-widest">EMPIRE CRM</h1>
     </header>
 
-    <div class="flow-border mb-10">
-        <div class="glass-card p-6">
-            <h2 class="text-lg font-bold mb-5 text-gradient-gold text-center">＋ 尊榮客戶登錄</h2>
-            <div class="space-y-4">
-                <input type="text" id="ipt-name" placeholder="客戶尊稱 (必填)">
-                <input type="text" id="ipt-contact" placeholder="聯絡資訊 (電話/LINE)">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="ipt-course" placeholder="需求項目">
-                    <input type="number" id="ipt-value" placeholder="預算金額">
-                </div>
-                <select id="ipt-stage">
-                    <option value="lead">新開發階段 (LEAD)</option>
-                    <option value="contacted">洽談中階段 (DEAL)</option>
-                    <option value="won">成交紀錄 (WON)</option>
-                </select>
-                <button id="btn-save">確認寫入資料庫</button>
+    <div class="mb-6">
+        <input type="text" id="search-input" placeholder="🔍 搜尋客戶姓名或項目..." class="search-bar">
+    </div>
+
+    <div class="glass-panel p-5 mb-8 border-yellow-600/30 border">
+        <h2 class="text-xs font-bold text-yellow-800 mb-4 tracking-[0.2em]">NEW REGISTRATION</h2>
+        <div class="space-y-3">
+            <input type="text" id="ipt-name" placeholder="客戶尊稱 (輸入舊名自動帶入)">
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="ipt-course" placeholder="項目">
+                <input type="number" id="ipt-value" placeholder="金額">
             </div>
+            <select id="ipt-stage">
+                <option value="lead">🆕 新開發 (LEAD)</option>
+                <option value="contacted">🤝 洽談中 (DEAL)</option>
+                <option value="won">💰 已成交 (WON)</option>
+            </select>
+            <input type="text" id="ipt-contact" placeholder="聯絡資訊">
+            <button id="btn-save" class="btn-gold w-full mt-2">儲存尊榮紀錄</button>
         </div>
     </div>
 
-    <div id="kanban-display" class="space-y-6"></div>
+    <div id="main-kanban"></div>
 
     <script>
-        // 等待頁面與 SDK 載入
-        window.addEventListener('load', function() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
+            authDomain: "holyhairsalon-f73bf.firebaseapp.com",
+            databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
+            projectId: "holyhairsalon-f73bf",
+            storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
+            messagingSenderId: "960169055224",
+            appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
+            measurementId: "G-XS22B43TYM"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        let allLeads = {}; // 用於快取所有資料
+
+        // --- 功能 A: 姓名連動偵測 ---
+        document.getElementById('ipt-name').addEventListener('input', function(e) {
+            const name = e.target.value.trim();
+            if(!name) return;
             
-            // 1. 已植入您的 Firebase 金鑰
-            const firebaseConfig = {
-                apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-                authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-                databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-                projectId: "holyhairsalon-f73bf",
-                storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-                messagingSenderId: "960169055224",
-                appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-                measurementId: "G-XS22B43TYM"
+            // 從歷史紀錄尋找最後一筆同名資料
+            const history = Object.values(allLeads).reverse().find(l => l.name === name);
+            if(history) {
+                document.getElementById('ipt-contact').value = history.contact || '';
+                document.getElementById('ipt-course').value = history.course || '';
+                // 輕微抖動提示已自動帶入 (可選)
+            }
+        });
+
+        // --- 功能 B: 搜尋過濾 ---
+        document.getElementById('search-input').addEventListener('input', () => renderUI(allLeads));
+
+        // 儲存
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const name = document.getElementById('ipt-name').value;
+            if(!name) return alert("請輸入姓名");
+            
+            const data = {
+                name: name,
+                course: document.getElementById('ipt-course').value || "",
+                value: document.getElementById('ipt-value').value || 0,
+                stage: document.getElementById('ipt-stage').value,
+                contact: document.getElementById('ipt-contact').value || "",
+                time: Date.now()
             };
 
-            // 2. 初始化
-            let database;
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                database = firebase.database();
-                document.getElementById('sync-status').innerText = "🟢 HOLY HAIR 雲端同步中";
-            } catch (e) {
-                document.getElementById('sync-status').innerText = "🔴 連線失敗：請檢查網路";
-            }
-
-            // 3. 儲存點擊監聽 (使用更穩定的 EventListener)
-            const saveBtn = document.getElementById('btn-save');
-            saveBtn.addEventListener('click', function() {
-                const name = document.getElementById('ipt-name').value;
-                if (!name) { alert("請輸入客戶尊稱"); return; }
-
-                const data = {
-                    name: name,
-                    contact: document.getElementById('ipt-contact').value || "未提供",
-                    course: document.getElementById('ipt-course').value || "專屬設計",
-                    value: document.getElementById('ipt-value').value || 0,
-                    stage: document.getElementById('ipt-stage').value,
-                    timestamp: Date.now()
-                };
-
-                saveBtn.disabled = true;
-                saveBtn.innerText = "同步中...";
-
-                database.ref('leads').push(data)
-                    .then(() => {
-                        alert("✨ 資料已安全存儲");
-                        document.getElementById('ipt-name').value = '';
-                        document.getElementById('ipt-contact').value = '';
-                        document.getElementById('ipt-course').value = '';
-                        document.getElementById('ipt-value').value = '';
-                    })
-                    .catch(err => alert("失敗：" + err.message))
-                    .finally(() => {
-                        saveBtn.disabled = false;
-                        saveBtn.innerText = "確認寫入資料庫";
-                    });
-            });
-
-            // 4. 渲染看板 (精品字體與排版)
-            database.ref('leads').on('value', (snapshot) => {
-                const val = snapshot.val() || {};
-                const display = document.getElementById('kanban-display');
-                display.innerHTML = '';
-
-                const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
-                
-                for (let s in stages) {
-                    const items = Object.keys(val).filter(id => val[id].stage === s);
-                    let html = `
-                        <div class="glass-card p-6">
-                            <div class="flex justify-between items-center mb-5">
-                                <span class="text-2xl font-black text-gradient-gold">${stages[s]}</span>
-                                <span class="bg-yellow-600 text-black px-3 py-1 rounded-lg font-black text-sm">${items.length}</span>
-                            </div>
-                            <div class="space-y-4">
-                    `;
-
-                    items.forEach(id => {
-                        const item = val[id];
-                        html += `
-                            <div class="bg-black/30 p-5 rounded-2xl border border-yellow-900/10">
-                                <div class="flex justify-between items-start">
-                                    <div class="text-2xl font-bold text-white">${item.name}</div>
-                                    <div class="text-2xl font-black text-gradient-gold">$${Number(item.value).toLocaleString()}</div>
-                                </div>
-                                <div class="text-sm text-yellow-800 mt-2 font-bold tracking-wider">${item.course} | ${item.contact}</div>
-                                <div class="mt-4 flex justify-end">
-                                    <button onclick="removeItem('${id}')" class="text-[10px] text-red-900 font-bold border border-red-900/30 px-2 py-1 rounded">移除</button>
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    html += `</div></div>`;
-                    display.innerHTML += html;
-                }
+            database.ref('leads').push(data).then(() => {
+                document.getElementById('ipt-name').value = '';
+                document.getElementById('ipt-contact').value = '';
+                document.getElementById('ipt-course').value = '';
+                document.getElementById('ipt-value').value = '';
             });
         });
 
-        function removeItem(id) {
-            if(confirm('確定移除此筆紀錄？')) firebase.database().ref('leads').child(id).remove();
+        // 監聽雲端
+        database.ref('leads').on('value', (snapshot) => {
+            allLeads = snapshot.val() || {};
+            renderUI(allLeads);
+        });
+
+        function renderUI(data) {
+            const kanban = document.getElementById('main-kanban');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            kanban.innerHTML = '';
+
+            const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
+            
+            for (let key in stages) {
+                const items = Object.keys(data).filter(id => {
+                    const matchSearch = data[id].name.toLowerCase().includes(searchTerm) || 
+                                       data[id].course.toLowerCase().includes(searchTerm);
+                    return data[id].stage === key && matchSearch;
+                });
+                
+                let section = `<div class="mb-8"><h2 class="text-xl font-black text-gold mb-3 px-2">${stages[key]} (${items.length})</h2>`;
+
+                items.reverse().forEach(id => {
+                    const item = data[id];
+                    section += `
+                        <div class="accordion-item glass-panel" id="card-${id}">
+                            <div class="p-5 flex justify-between items-center" onclick="document.getElementById('card-${id}').classList.toggle('active')">
+                                <div>
+                                    <div class="text-xl font-bold text-white">${item.name}</div>
+                                    <div class="text-[10px] text-yellow-800 tracking-widest uppercase">${item.course}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xl font-black text-gold">$${Number(item.value).toLocaleString()}</div>
+                                    <div class="text-[10px] text-yellow-900 italic">DETAILS ▼</div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-content p-5 space-y-4">
+                                <div>
+                                    <label class="text-[10px] text-yellow-700">修改項目名稱</label>
+                                    <input type="text" id="edit-course-${id}" value="${item.course}">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-yellow-700">修改聯絡資訊</label>
+                                    <input type="text" id="edit-contact-${id}" value="${item.contact}">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-yellow-700">修改成交金額</label>
+                                    <input type="number" id="edit-value-${id}" value="${item.value}">
+                                </div>
+                                <div class="flex gap-2 pt-2">
+                                    <button onclick="updateRec('${id}')" class="btn-gold flex-1">儲存修改</button>
+                                    <button onclick="deleteRec('${id}')" class="bg-red-950/30 text-red-600 px-4 rounded-xl text-xs font-bold border border-red-900/30">刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                section += `</div>`;
+                kanban.innerHTML += section;
+            }
+        }
+
+        // --- 功能 C: 修改紀錄 ---
+        function updateRec(id) {
+            const newCourse = document.getElementById(`edit-course-${id}`).value;
+            const newContact = document.getElementById(`edit-contact-${id}`).value;
+            const newValue = document.getElementById(`edit-value-${id}`).value;
+
+            database.ref('leads').child(id).update({
+                course: newCourse,
+                contact: newContact,
+                value: newValue
+            }).then(() => {
+                alert("修改成功");
+                document.getElementById(`card-${id}`).classList.remove('active');
+            });
+        }
+
+        function deleteRec(id) {
+            if(confirm('確定要移除此筆紀錄？')) database.ref('leads').child(id).remove();
         }
     </script>
 </body>
