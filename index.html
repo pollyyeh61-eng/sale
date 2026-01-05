@@ -3,160 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - 尊榮管理</title>
+    <title>EMPIRE CRM - 永續尊榮版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root {
-            --gold: #d4af37;
-            --dark-gold: #8e6d13;
-            --bg: #0a0a0a;
-            --card-bg: #161616;
-        }
-
+        :root { --gold: #d4af37; --dark-gold: #8e6d13; --bg: #0a0a0a; --card-bg: #161616; }
         body { background-color: var(--bg); color: #d1d1d1; font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
 
-        /* 呼吸邊框與金屬按鈕 */
-        .breath-border {
-            border: 1px solid var(--dark-gold);
-            animation: breathe 4s infinite ease-in-out;
-        }
+        /* 呼吸與金屬質感 */
+        .breath-border { border: 1px solid var(--dark-gold); animation: breathe 4s infinite ease-in-out; }
         @keyframes breathe {
             0%, 100% { border-color: var(--dark-gold); box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
             50% { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
         }
-
         .gold-btn {
             background: linear-gradient(135deg, var(--dark-gold), var(--gold), var(--dark-gold));
-            background-size: 200% 200%;
-            animation: gold-flow 4s infinite linear;
+            background-size: 200% 200%; animation: gold-flow 4s infinite linear;
             color: #000; font-weight: bold; border: none;
         }
         @keyframes gold-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* 看板捲動 */
-        .kanban-wrapper {
-            display: flex; overflow-x: auto; gap: 1rem; padding: 1rem;
-            scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-        }
-        .kanban-column {
-            flex: 0 0 85vw; scroll-snap-align: center;
-            background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 1rem; min-height: 65vh;
-        }
+        /* 手機看板橫向捲動 */
+        .kanban-wrapper { display: flex; overflow-x: auto; gap: 1rem; padding: 1rem; scroll-snap-type: x mandatory; }
+        .kanban-column { flex: 0 0 85vw; scroll-snap-align: center; background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 1rem; min-height: 60vh; }
+        .customer-card { background: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem; }
 
-        .customer-card {
-            background: var(--card-bg); border: 1px solid #2a2a2a;
-            border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem;
-            transition: transform 0.2s;
-        }
-        .customer-card:active { transform: scale(0.98); }
-
-        /* 彈窗樣式 */
-        #details-modal {
-            display: none; position: fixed; inset: 0; z-index: 100;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
-            align-items: center; justify-content: center; padding: 1.5rem;
-        }
+        /* 詳細資料彈窗 */
+        #details-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1.5rem; }
+        input, select { background: #1a1a1a !important; border: 1px solid #333 !important; color: #fff !important; }
     </style>
 </head>
 <body class="pb-24">
 
     <header class="p-6 text-center">
-        <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 to-yellow-600">EMPIRE SALES</h1>
-        <p id="sync-status" class="text-[10px] text-yellow-800 uppercase mt-1">System Secure Connected</p>
+        <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 to-yellow-600">EMPIRE CRM</h1>
+        <p id="sync-status" class="text-[10px] text-yellow-800 uppercase mt-1 tracking-tighter">Local + Cloud Secure Synced</p>
     </header>
 
     <div class="px-4 mb-6">
-        <details class="breath-border rounded-xl p-4 bg-zinc-950">
-            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none">＋ 登錄高端潛在客戶</summary>
+        <details class="breath-border rounded-xl p-4 bg-zinc-950" id="form-details">
+            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none font-bold">＋ 登錄客戶資料 (防閃退模式)</summary>
             <form id="add-lead-form" class="mt-4 space-y-3">
-                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white">
-                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="course" placeholder="預約項目" class="w-full p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white">
-                    <input type="number" id="value" placeholder="預算金額" class="w-full p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-white">
+                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-3 rounded-lg draft-sync">
+                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-3 rounded-lg draft-sync">
+                <div class="space-y-1">
+                    <label class="text-xs text-yellow-700 ml-1">初始開發階段</label>
+                    <select id="stage-select" class="w-full p-3 rounded-lg draft-sync">
+                        <option value="lead">新開發 (Lead)</option>
+                        <option value="contacted">洽談中 (Contacted)</option>
+                        <option value="won">已成交 (Won)</option>
+                    </select>
                 </div>
-                <button type="submit" class="gold-btn w-full py-3 rounded-lg shadow-lg">寫入雲端系統</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="course" placeholder="需求項目" class="w-full p-3 rounded-lg draft-sync">
+                    <input type="number" id="value" placeholder="預算金額" class="w-full p-3 rounded-lg draft-sync">
+                </div>
+                <button type="submit" class="gold-btn w-full py-3 rounded-lg shadow-lg">寫入永久數據庫</button>
             </form>
         </details>
     </div>
 
     <div class="kanban-wrapper" id="kanban-board">
         <div class="kanban-column" data-stage="lead">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>新開發 Lead</span> <span class="count text-xs bg-yellow-900/30 px-2 py-1 rounded">0</span></h2>
-            <div id="lead-list" class="stage-list min-h-[400px]"></div>
+            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between items-center"><span>新開發 (Lead)</span> <span class="count text-[10px] bg-yellow-900/30 px-2 py-1 rounded">0</span></h2>
+            <div id="lead-list" class="stage-list min-h-[300px]"></div>
         </div>
         <div class="kanban-column" data-stage="contacted">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>洽談中 Contact</span> <span class="count text-xs bg-yellow-900/30 px-2 py-1 rounded">0</span></h2>
-            <div id="contacted-list" class="stage-list min-h-[400px]"></div>
+            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between items-center"><span>洽談中 (Contacted)</span> <span class="count text-[10px] bg-yellow-900/30 px-2 py-1 rounded">0</span></h2>
+            <div id="contacted-list" class="stage-list min-h-[300px]"></div>
         </div>
         <div class="kanban-column" data-stage="won">
-            <h2 class="text-green-500 font-bold mb-4 flex justify-between"><span>成交 Won</span> <span class="count text-xs bg-green-900/30 px-2 py-1 rounded">0</span></h2>
-            <div id="won-list" class="stage-list min-h-[400px]"></div>
+            <h2 class="text-green-500 font-bold mb-4 flex justify-between items-center"><span>已成交 (Won)</span> <span class="count text-[10px] bg-green-900/30 px-2 py-1 rounded">0</span></h2>
+            <div id="won-list" class="stage-list min-h-[300px]"></div>
         </div>
     </div>
 
     <div id="details-modal">
-        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-sm rounded-2xl p-6 relative">
-            <h2 id="modal-name" class="text-2xl font-bold text-yellow-500 mb-4">客戶詳情</h2>
-            <div class="space-y-4 text-sm">
-                <div class="border-b border-zinc-800 pb-2">
-                    <label class="text-gray-500 block">聯絡方式</label>
-                    <p id="modal-contact" class="text-lg text-white font-medium"></p>
+        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-xs rounded-2xl p-6 relative">
+            <h2 id="modal-name" class="text-2xl font-bold text-yellow-500 mb-4 tracking-wider"></h2>
+            <div class="space-y-4 text-sm" id="modal-content">
                 </div>
-                <div class="border-b border-zinc-800 pb-2">
-                    <label class="text-gray-500 block">感興趣項目</label>
-                    <p id="modal-course" class="text-white"></p>
-                </div>
-                <div class="border-b border-zinc-800 pb-2">
-                    <label class="text-gray-500 block">預估價值</label>
-                    <p id="modal-value" class="text-yellow-500 text-xl font-bold"></p>
-                </div>
-            </div>
-            <div class="mt-8 flex gap-3">
-                <button onclick="closeModal()" class="flex-1 py-2 rounded-lg bg-zinc-800 text-white">關閉</button>
-                <button id="modal-delete-btn" class="px-4 py-2 rounded-lg bg-red-900/30 text-red-500">刪除紀錄</button>
+            <div class="mt-8 flex gap-2">
+                <button onclick="closeModal()" class="flex-1 py-3 rounded-lg bg-zinc-800 text-white font-bold">關閉</button>
+                <button id="modal-delete-btn" class="px-4 py-3 rounded-lg bg-red-900/20 text-red-500 text-xs">刪除</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 請將此處替換為您的 Firebase 配置 ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-  measurementId: "G-XS22B43TYM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+        // --- Firebase 配置 (請填入您的金鑰) ---
+        const firebaseConfig = {
+            apiKey: "填入您的API_KEY",
+            databaseURL: "填入您的DATABASE_URL",
+            projectId: "填入您的PROJECT_ID",
+        };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const leadsRef = db.ref('leads');
 
-        // 渲染資料
+        // 1. 防閃退功能：即時存取草稿
+        const draftSyncInputs = document.querySelectorAll('.draft-sync');
+        draftSyncInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const draft = {};
+                draftSyncInputs.forEach(i => draft[i.id] = i.value);
+                localStorage.setItem('form_draft', JSON.stringify(draft));
+            });
+        });
+
+        // 頁面載入時還原草稿與本地快照
+        window.onload = () => {
+            const savedDraft = localStorage.getItem('form_draft');
+            if (savedDraft) {
+                const draft = JSON.parse(savedDraft);
+                Object.keys(draft).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = draft[id];
+                });
+                if (draft.name) document.getElementById('form-details').open = true;
+            }
+            // 先渲染本地快照，避免白屏
+            const localSnapshot = localStorage.getItem('local_leads_backup');
+            if (localSnapshot) renderLeads(JSON.parse(localSnapshot));
+        };
+
+        // 2. 核心監聽：雲端與本地備份同步
         leadsRef.on('value', (snapshot) => {
             const data = snapshot.val() || {};
+            localStorage.setItem('local_leads_backup', JSON.stringify(data)); // 本地永久備份
             renderLeads(data);
-            updateCounts();
+            updateColumnCounts();
         });
 
         function renderLeads(leads) {
@@ -169,57 +149,58 @@ const analytics = getAnalytics(app);
                 card.onclick = () => openModal(id, lead);
                 card.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <span class="font-bold text-white">${lead.name}</span>
-                        <span class="text-yellow-600 text-xs font-black">$${Number(lead.value).toLocaleString()}</span>
+                        <span class="font-bold text-gray-200">${lead.name}</span>
+                        <span class="text-yellow-600 text-xs font-black tracking-tighter">$${Number(lead.value).toLocaleString()}</span>
                     </div>
-                    <div class="text-[10px] text-gray-500 mt-2 tracking-widest">${lead.course || '專屬諮詢'}</div>
                 `;
-                const container = document.getElementById(`${lead.stage}-list`);
-                if (container) container.appendChild(card);
+                const targetList = document.getElementById(`${lead.stage}-list`);
+                if (targetList) targetList.appendChild(card);
             });
         }
 
-        // 彈窗邏輯
+        // 彈窗顯示
         function openModal(id, lead) {
             document.getElementById('modal-name').innerText = lead.name;
-            document.getElementById('modal-contact').innerText = lead.contact;
-            document.getElementById('modal-course').innerText = lead.course || '未填寫';
-            document.getElementById('modal-value').innerText = `$ ${Number(lead.value).toLocaleString()}`;
-            document.getElementById('modal-delete-btn').onclick = () => deleteLead(id);
+            document.getElementById('modal-content').innerHTML = `
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs">聯絡</label><p class="text-white">${lead.contact}</p></div>
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs">項目</label><p class="text-white">${lead.course || '一般'}</p></div>
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs">預算</label><p class="text-yellow-500 font-bold">$ ${Number(lead.value).toLocaleString()}</p></div>
+            `;
+            document.getElementById('modal-delete-btn').onclick = () => {
+                if(confirm('刪除雲端與本地紀錄？')) { leadsRef.child(id).remove(); closeModal(); }
+            };
             document.getElementById('details-modal').style.display = 'flex';
         }
 
         function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
 
-        function deleteLead(id) {
-            if(confirm('確定要永久刪除此客戶紀錄？')) {
-                leadsRef.child(id).remove();
-                closeModal();
-            }
-        }
-
-        // 表單提交 (確保寫入成功)
-        document.getElementById('add-lead-form').onsubmit = (e) => {
+        // 儲存邏輯
+        document.getElementById('add-lead-form').onsubmit = function(e) {
             e.preventDefault();
-            const newLead = {
-                name: document.getElementById('name').value,
-                contact: document.getElementById('contact').value,
-                course: document.getElementById('course').value,
-                value: document.getElementById('value').value || 0,
-                stage: 'lead',
-                timestamp: Date.now()
-            };
-            leadsRef.push(newLead).then(() => {
-                e.target.reset();
-                e.target.parentElement.removeAttribute('open');
-            }).catch(err => alert("寫入失敗，請檢查 Firebase Rules: " + err));
+            try {
+                const newLead = {
+                    name: document.getElementById('name').value,
+                    contact: document.getElementById('contact').value,
+                    stage: document.getElementById('stage-select').value,
+                    course: document.getElementById('course').value,
+                    value: document.getElementById('value').value || 0,
+                    timestamp: Date.now()
+                };
+                
+                leadsRef.push(newLead).then(() => {
+                    localStorage.removeItem('form_draft'); // 提交成功才清除草稿
+                    this.reset();
+                    document.getElementById('form-details').open = false;
+                });
+            } catch (err) {
+                alert("寫入發生錯誤，但資料已保存在本地。");
+            }
         };
 
         // 拖拽同步
         document.querySelectorAll('.stage-list').forEach(list => {
             new Sortable(list, {
-                group: 'kanban',
-                animation: 150,
+                group: 'kanban', animation: 150,
                 onEnd: (evt) => {
                     const id = evt.item.dataset.id;
                     const newStage = evt.to.parentElement.dataset.stage;
@@ -228,10 +209,9 @@ const analytics = getAnalytics(app);
             });
         });
 
-        function updateCounts() {
+        function updateColumnCounts() {
             document.querySelectorAll('.kanban-column').forEach(col => {
-                const count = col.querySelectorAll('.customer-card').length;
-                col.querySelector('.count').innerText = count;
+                col.querySelector('.count').innerText = col.querySelectorAll('.customer-card').length;
             });
         }
     </script>
