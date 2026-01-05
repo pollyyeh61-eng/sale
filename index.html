@@ -24,7 +24,6 @@
             border: 1px solid rgba(212, 175, 55, 0.1); border-radius: 24px;
         }
 
-        /* 流動金光邊框 */
         .flow-border-box {
             position: relative; border-radius: 24px; padding: 1px;
             background: linear-gradient(90deg, transparent, var(--gold-main), transparent, var(--gold-bright), transparent);
@@ -32,7 +31,6 @@
         }
         @keyframes flowGold { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* 按鈕反色效果 */
         .btn-gold-action {
             background: linear-gradient(180deg, var(--gold-bright), var(--gold-main));
             color: #000; font-weight: 900; padding: 16px; border-radius: 16px; 
@@ -76,7 +74,8 @@
 
         <div class="flow-border-box mb-6">
             <div class="glass-panel p-6 space-y-4">
-                <input type="text" id="ipt-name" placeholder="客戶尊稱 (輸入舊名自動帶入)" class="w-full">
+                <input type="text" id="ipt-name" placeholder="客戶姓名" class="w-full">
+                <input type="tel" id="ipt-phone" placeholder="聯絡電話 (辨識重複使用)" class="w-full">
                 <div class="grid grid-cols-2 gap-3">
                     <input type="text" id="ipt-course" placeholder="項目內容">
                     <input type="number" id="ipt-value" placeholder="預算金額">
@@ -86,7 +85,7 @@
                     <option value="contacted">洽談中階段 (DEAL)</option>
                     <option value="won">成交紀錄 (WON)</option>
                 </select>
-                <input type="text" id="ipt-contact" placeholder="聯絡資訊" class="w-full">
+                <input type="text" id="ipt-contact" placeholder="備註資訊 (Line/地址等)" class="w-full">
                 <button id="btn-save" class="btn-gold-action">同步至銷售抽屜</button>
             </div>
         </div>
@@ -103,7 +102,7 @@
             <header class="py-4 text-center">
                 <h1 class="text-2xl font-black text-gradient-gold tracking-widest uppercase">銷售開發系統</h1>
             </header>
-            <input type="text" id="search-input" placeholder="🔍 搜尋特定客戶抽屜..." class="w-full mb-6">
+            <input type="text" id="search-input" placeholder="🔍 搜尋姓名、電話或項目..." class="w-full mb-6">
             <div id="kanban-display" class="space-y-6"></div>
         </div>
     </div>
@@ -118,7 +117,6 @@
     </nav>
 
     <script>
-        // --- 核心連線：已植入您的 Firebase 金鑰 ---
         const firebaseConfig = {
             apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
             authDomain: "holyhairsalon-f73bf.firebaseapp.com",
@@ -134,16 +132,23 @@
         const database = firebase.database();
         let cacheData = {};
 
-        // 智慧聯想：輸入姓名自動填入資訊
-        document.getElementById('ipt-name').addEventListener('input', function(e) {
-            const name = e.target.value.trim();
-            if(!name) return;
-            const history = Object.values(cacheData).reverse().find(l => l.name === name);
+        // 智慧聯想：輸入姓名或電話自動帶入
+        const nameInput = document.getElementById('ipt-name');
+        const phoneInput = document.getElementById('ipt-phone');
+
+        function autoFill(triggerValue) {
+            if(!triggerValue) return;
+            const history = Object.values(cacheData).reverse().find(l => l.name === triggerValue || l.phone === triggerValue);
             if(history) {
+                nameInput.value = history.name || nameInput.value;
+                phoneInput.value = history.phone || phoneInput.value;
                 document.getElementById('ipt-contact').value = history.contact || '';
                 document.getElementById('ipt-course').value = history.course || '';
             }
-        });
+        }
+
+        nameInput.addEventListener('blur', (e) => autoFill(e.target.value.trim()));
+        phoneInput.addEventListener('blur', (e) => autoFill(e.target.value.trim()));
 
         function switchPage(p) {
             document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
@@ -160,10 +165,12 @@
         }
 
         document.getElementById('btn-save').addEventListener('click', () => {
-            const name = document.getElementById('ipt-name').value.trim();
+            const name = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
             if(!name) return alert("請填姓名");
             const data = {
                 name,
+                phone: phone || "無電話",
                 course: document.getElementById('ipt-course').value || "未指定",
                 value: document.getElementById('ipt-value').value || 0,
                 stage: document.getElementById('ipt-stage').value,
@@ -171,12 +178,11 @@
                 time: Date.now()
             };
             database.ref('leads').push(data).then(() => {
-                alert("✨ 同步成功");
-                document.getElementById('ipt-name').value = '';
+                alert("✨ 資料已歸檔至抽屜");
+                nameInput.value = ''; phoneInput.value = '';
             });
         });
 
-        // 渲染：抽屜歸納邏輯
         database.ref('leads').on('value', (snapshot) => {
             cacheData = snapshot.val() || {};
             const container = document.getElementById('kanban-display');
@@ -187,30 +193,34 @@
             
             for (let s in stages) {
                 const stageData = Object.keys(cacheData).filter(id => cacheData[id].stage === s);
-                const groups = {};
+                const groups = {}; // 以 姓名+電話 作為唯一 Key
+                
                 stageData.forEach(id => {
-                    const name = cacheData[id].name;
-                    if(!groups[name]) groups[name] = [];
-                    groups[name].push({id, ...cacheData[id]});
+                    const l = cacheData[id];
+                    const key = `${l.name}_${l.phone}`;
+                    if(!groups[key]) groups[key] = [];
+                    groups[key].push({id, ...l});
                 });
 
                 let html = `<h2 class="text-xl font-black text-gradient-gold mb-4 px-2 border-l-4 border-yellow-700 ml-1">${stages[s]}</h2>`;
                 
-                Object.keys(groups).forEach(name => {
-                    if(!name.toLowerCase().includes(search)) return;
-                    const items = groups[name].sort((a,b) => b.time - a.time);
+                Object.keys(groups).forEach(key => {
+                    const items = groups[key].sort((a,b) => b.time - a.time);
+                    const first = items[0];
+                    if(!first.name.toLowerCase().includes(search) && !first.phone.includes(search)) return;
+                    
                     const total = items.reduce((sum, i) => sum + Number(i.value), 0);
                     
                     html += `
-                        <div class="glass-panel mb-4 overflow-hidden" id="draw-${name}-${s}">
+                        <div class="glass-panel mb-4 overflow-hidden" id="draw-${key}-${s}">
                             <div class="p-5 flex justify-between items-center bg-white/5" onclick="this.parentElement.classList.toggle('active')">
                                 <div>
-                                    <div class="text-xl font-bold text-white">${name}</div>
-                                    <div class="text-[10px] text-yellow-800 tracking-tighter">${items.length} 筆開發紀錄</div>
+                                    <div class="text-xl font-bold text-white">${first.name}</div>
+                                    <div class="text-[10px] text-yellow-800 tracking-tighter">${first.phone} · ${items.length} 筆紀錄</div>
                                 </div>
                                 <div class="text-right">
                                     <div class="text-xl font-black text-gradient-gold">$${total.toLocaleString()}</div>
-                                    <div class="text-[9px] text-yellow-900 italic">OPEN DRAWER ▼</div>
+                                    <div class="text-[9px] text-yellow-900 italic font-bold">VIEW DETAILS ▼</div>
                                 </div>
                             </div>
                             <div class="drawer-content space-y-3">
@@ -221,8 +231,10 @@
                                             <span class="text-gradient-gold font-black">$${Number(i.value).toLocaleString()}</span>
                                         </div>
                                         <div class="text-white text-md font-bold">${i.course}</div>
-                                        <div class="text-xs text-yellow-900 mt-1">${i.contact}</div>
-                                        <button onclick="deleteItem('${i.id}')" class="text-[9px] text-red-900 mt-2 font-bold opacity-50">移除此紀錄</button>
+                                        <div class="text-xs text-yellow-900 mt-1">備註：${i.contact}</div>
+                                        <div class="flex justify-end mt-2">
+                                            <button onclick="deleteItem('${i.id}')" class="text-[9px] text-red-900 font-bold opacity-40">移除此紀錄</button>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -233,8 +245,8 @@
             }
         });
 
-        function deleteItem(id) { if(confirm('確定移除此紀錄？')) database.ref('leads').child(id).remove(); }
-        document.getElementById('search-input').addEventListener('input', () => { /* 觸發即時搜尋渲染 */ });
+        function deleteItem(id) { if(confirm('確定移除？')) database.ref('leads').child(id).remove(); }
+        document.getElementById('search-input').addEventListener('input', () => { /* 即時觸發 */ });
     </script>
 </body>
 </html>
