@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>銷售開發系統</title>
+    <title>EMPIRE CRM - 銷售開發系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -21,33 +21,10 @@
         .glass-panel {
             background: rgba(20, 20, 20, 0.7);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            border-radius: 24px;
+            border: 1px solid rgba(212, 175, 55, 0.1); border-radius: 24px;
         }
 
-        /* 按鈕基礎樣式 */
-        .btn-gold-action {
-            background: linear-gradient(180deg, var(--gold-bright), var(--gold-main));
-            color: #000; 
-            font-weight: 900; 
-            padding: 16px; 
-            border-radius: 16px; 
-            width: 100%; 
-            cursor: pointer;
-            transition: all 0.1s ease;
-            border: 2px solid transparent;
-        }
-
-        /* --- 核心：按下去反色效果 --- */
-        .btn-gold-action:active {
-            background: #000 !important; /* 背景變黑 */
-            color: var(--gold-main) !important; /* 文字變金 */
-            border: 2px solid var(--gold-main); /* 增加金邊 */
-            transform: scale(0.96); /* 稍微縮小增加按壓感 */
-            box-shadow: 0 0 15px var(--gold-dark);
-        }
-
-        /* 其他原有設計保持不動 */
+        /* 流動金光邊框 */
         .flow-border-box {
             position: relative; border-radius: 24px; padding: 1px;
             background: linear-gradient(90deg, transparent, var(--gold-main), transparent, var(--gold-bright), transparent);
@@ -55,12 +32,24 @@
         }
         @keyframes flowGold { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+        /* --- 核心：按鈕反色效果 --- */
+        .btn-gold-action {
+            background: linear-gradient(180deg, var(--gold-bright), var(--gold-main));
+            color: #000; font-weight: 900; padding: 16px; border-radius: 16px; 
+            width: 100%; cursor: pointer; border: 2px solid transparent; transition: all 0.1s;
+        }
+        .btn-gold-action:active {
+            background: #000 !important; color: var(--gold-main) !important;
+            border: 2px solid var(--gold-main); transform: scale(0.96);
+        }
+
+        /* 抽屜動態 */
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .drawer-content { max-height: 0; overflow: hidden; transition: all 0.5s ease; }
-        .active .drawer-content { max-height: 2000px; padding: 10px; }
+        .active .drawer-content { max-height: 2000px; padding: 15px 10px; }
 
         input, select {
             background: rgba(0,0,0,0.6) !important;
@@ -83,78 +72,80 @@
 
     <div id="page-input" class="page active">
         <header class="py-6 text-center">
-            <h1 class="text-3xl tracking-widest text-gradient-gold">銷售開發系統</h1>
+            <h1 class="text-3xl tracking-widest text-gradient-gold">CLIENT LOG</h1>
         </header>
 
         <div class="flow-border-box mb-6">
             <div class="glass-panel p-6 space-y-4">
-                <input type="text" id="ipt-name" placeholder="客戶尊稱" class="w-full">
+                <input type="text" id="ipt-name" placeholder="客戶尊稱 (智慧聯想中...)" class="w-full">
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="ipt-course" placeholder="項目">
-                    <input type="number" id="ipt-value" placeholder="金額">
+                    <input type="text" id="ipt-course" placeholder="項目內容">
+                    <input type="number" id="ipt-value" placeholder="預算金額">
                 </div>
                 <select id="ipt-stage" class="w-full">
-                    <option value="lead">新開發 (LEAD)</option>
-                    <option value="contacted">洽談中 (DEAL)</option>
+                    <option value="lead">新開發階段 (LEAD)</option>
+                    <option value="contacted">洽談中階段 (DEAL)</option>
                     <option value="won">成交紀錄 (WON)</option>
                 </select>
-                <input type="text" id="ipt-contact" placeholder="聯絡細節" class="w-full">
-                <button id="btn-save" class="btn-gold-action">同步至抽屜</button>
+                <input type="text" id="ipt-contact" placeholder="聯絡資訊" class="w-full">
+                <button id="btn-save" class="btn-gold-action">同步至銷售抽屜</button>
             </div>
         </div>
     </div>
 
     <div id="page-admin" class="page">
         <div id="lock-screen" class="py-20 text-center">
-            <h2 class="text-xl font-bold text-gradient-gold mb-6">請輸入密碼解鎖</h2>
+            <h2 class="text-xl font-bold text-gradient-gold mb-6">請輸入 0000 解鎖系統</h2>
             <input type="password" id="admin-pass" class="text-center w-40 mb-4" maxlength="4">
-            <button onclick="checkPass()" class="btn-gold-action w-40 mx-auto block">解鎖</button>
+            <button onclick="checkPass()" class="btn-gold-action w-40 mx-auto block">進入系統</button>
         </div>
 
         <div id="admin-content" style="display:none;">
-            <input type="text" id="search-input" placeholder="🔍 搜尋抽屜..." class="w-full mb-6">
+            <header class="py-4 text-center">
+                <h1 class="text-2xl font-black text-gradient-gold tracking-widest">銷售開發系統</h1>
+            </header>
+            <input type="text" id="search-input" placeholder="🔍 搜尋特定客戶抽屜..." class="w-full mb-6">
             <div id="kanban-display" class="space-y-6"></div>
         </div>
     </div>
 
     <nav class="nav-bar">
         <div class="nav-item active" id="nav-input" onclick="switchPage('input')">
-            <div class="text-2xl">✍️</div><div>登錄</div>
+            <div class="text-2xl">✍️</div><div>登錄客戶</div>
         </div>
         <div class="nav-item" id="nav-admin" onclick="switchPage('admin')">
-            <div class="text-2xl">🔐</div><div>抽屜管理</div>
+            <div class="text-2xl">🗄️</div><div>銷售開發系統</div>
         </div>
     </nav>
 
     <script>
-        // 您的 Firebase Config
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-  measurementId: "G-XS22B43TYM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
+            authDomain: "holyhairsalon-f73bf.firebaseapp.com",
+            databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
+            projectId: "holyhairsalon-f73bf",
+            storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
+            messagingSenderId: "960169055224",
+            appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
+            measurementId: "G-XS22B43TYM"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        let cacheData = {};
 
-        // 頁面切換
+        // --- 功能 A: 智慧聯想 (自動跳出上一次資訊) ---
+        document.getElementById('ipt-name').addEventListener('input', function(e) {
+            const name = e.target.value.trim();
+            if(!name) return;
+            const history = Object.values(cacheData).reverse().find(l => l.name === name);
+            if(history) {
+                document.getElementById('ipt-contact').value = history.contact || '';
+                document.getElementById('ipt-course').value = history.course || '';
+            }
+        });
+
+        // 頁面與解鎖邏輯
         function switchPage(p) {
             document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
@@ -162,7 +153,6 @@ const analytics = getAnalytics(app);
             document.getElementById('nav-'+p).classList.add('active');
         }
 
-        // 解鎖
         function checkPass() {
             if(document.getElementById('admin-pass').value === '0000') {
                 document.getElementById('lock-screen').style.display = 'none';
@@ -183,43 +173,60 @@ const analytics = getAnalytics(app);
                 time: Date.now()
             };
             database.ref('leads').push(data).then(() => {
-                alert("✨ 同步完成");
+                alert("✨ 同步成功");
                 document.getElementById('ipt-name').value = '';
             });
         });
 
-        // 渲染 (抽屜歸納)
+        // --- 功能 B: 抽屜式開發面板 ---
         database.ref('leads').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
+            cacheData = snapshot.val() || {};
             const container = document.getElementById('kanban-display');
+            const search = document.getElementById('search-input').value.toLowerCase();
             container.innerHTML = '';
 
-            const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
+            const stages = { lead: '新開發階段', contacted: '洽談中階段', won: '成交紀錄' };
+            
             for (let s in stages) {
-                const stageData = Object.keys(data).filter(id => data[id].stage === s);
+                const stageData = Object.keys(cacheData).filter(id => cacheData[id].stage === s);
+                
+                // 按姓名歸類
                 const groups = {};
                 stageData.forEach(id => {
-                    const name = data[id].name;
+                    const name = cacheData[id].name;
                     if(!groups[name]) groups[name] = [];
-                    groups[name].push({id, ...data[id]});
+                    groups[name].push({id, ...cacheData[id]});
                 });
 
-                let html = `<h2 class="text-xl font-black text-gradient-gold mb-4">${stages[s]}</h2>`;
+                let html = `<h2 class="text-xl font-black text-gradient-gold mb-4 px-2 border-l-4 border-yellow-700 ml-1">${stages[s]}</h2>`;
+                
                 Object.keys(groups).forEach(name => {
+                    if(!name.toLowerCase().includes(search)) return;
                     const items = groups[name].sort((a,b) => b.time - a.time);
                     const total = items.reduce((sum, i) => sum + Number(i.value), 0);
+                    
                     html += `
-                        <div class="glass-panel mb-4 overflow-hidden" id="group-${name}">
-                            <div class="p-5 flex justify-between bg-white/5" onclick="this.parentElement.classList.toggle('active')">
-                                <div><div class="text-lg font-bold text-white">${name}</div><div class="text-[10px] text-yellow-800">${items.length} 筆明細</div></div>
-                                <div class="text-right"><div class="text-lg font-black text-gradient-gold">$${total.toLocaleString()}</div><div class="text-[9px]">OPEN ▼</div></div>
+                        <div class="glass-panel mb-4 overflow-hidden" id="draw-${name}-${s}">
+                            <div class="p-5 flex justify-between items-center bg-white/5" onclick="this.parentElement.classList.toggle('active')">
+                                <div>
+                                    <div class="text-xl font-bold text-white">${name}</div>
+                                    <div class="text-[10px] text-yellow-800 tracking-tighter">${items.length} 筆開發紀錄</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xl font-black text-gradient-gold">$${total.toLocaleString()}</div>
+                                    <div class="text-[9px] text-yellow-900 italic">OPEN DRAWER ▼</div>
+                                </div>
                             </div>
-                            <div class="drawer-content px-4">
+                            <div class="drawer-content space-y-3">
                                 ${items.map(i => `
-                                    <div class="py-3 border-b border-yellow-900/10 last:border-0">
-                                        <div class="flex justify-between text-xs font-bold"><span class="text-yellow-700">${new Date(i.time).toLocaleDateString()}</span><span class="text-gradient-gold">$${Number(i.value).toLocaleString()}</span></div>
-                                        <div class="text-sm text-white mt-1">${i.course}</div>
-                                        <button onclick="deleteItem('${i.id}')" class="text-[9px] text-red-900 mt-2">移除此單</button>
+                                    <div class="p-3 bg-black/40 rounded-xl border border-yellow-900/10">
+                                        <div class="flex justify-between text-xs font-bold mb-1">
+                                            <span class="text-yellow-700">${new Date(i.time).toLocaleDateString()}</span>
+                                            <span class="text-gradient-gold font-black">$${Number(i.value).toLocaleString()}</span>
+                                        </div>
+                                        <div class="text-white text-md font-bold">${i.course}</div>
+                                        <div class="text-xs text-yellow-900 mt-1">聯絡：${i.contact}</div>
+                                        <button onclick="deleteItem('${i.id}')" class="text-[9px] text-red-900 mt-2 font-bold opacity-50">移除此紀錄</button>
                                     </div>
                                 `).join('')}
                             </div>
@@ -230,9 +237,8 @@ const analytics = getAnalytics(app);
             }
         });
 
-        function deleteItem(id) { if(confirm('移除？')) database.ref('leads').child(id).remove(); }
+        function deleteItem(id) { if(confirm('確定移除此紀錄？')) database.ref('leads').child(id).remove(); }
+        document.getElementById('search-input').addEventListener('input', () => database.ref('leads').trigger('value'));
     </script>
 </body>
 </html>
-
-
