@@ -3,270 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>銷售開發系統 - 精品流金版</title>
+    <title>EMPIRE CRM - 穩定流金版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { 
-            --gold-bright: #fde68a; 
-            --gold-main: #d4af37; 
-            --gold-dark: #8e6d13;
-            --bg-black: #050505;
-        }
+        :root { --gold-bright: #fde68a; --gold-main: #d4af37; --gold-dark: #8e6d13; }
+        body { background-color: #050505; color: var(--gold-main); font-family: 'Noto Sans TC', sans-serif; }
         
-        body { 
-            background-color: var(--bg-black); 
-            color: var(--gold-main); 
-            font-family: 'Noto Sans TC', sans-serif; 
-            background-image: radial-gradient(circle at top right, #1a150a, transparent);
-        }
-
-        /* 漸層金屬字體 */
         .text-gradient-gold {
             background: linear-gradient(to bottom, #fff6d5 0%, #d4af37 50%, #8e6d13 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* 毛玻璃效果卡片 */
         .glass-card {
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(212, 175, 55, 0.2);
             border-radius: 24px;
-            position: relative;
-            overflow: hidden;
         }
 
-        /* 流動金光邊框動畫 */
-        .flow-border {
-            position: relative;
-            padding: 1px; /* 邊框厚度 */
-            background: linear-gradient(90deg, transparent, var(--gold-main), transparent);
-            background-size: 200% 100%;
-            animation: flow 4s linear infinite;
-            border-radius: 24px;
-        }
-        @keyframes flow {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* 下拉手風琴樣式 */
-        .section-header {
-            padding: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .count-badge {
-            background: linear-gradient(135deg, var(--gold-bright), var(--gold-main));
-            color: #000;
-            font-weight: 900;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-        }
-
-        /* 客戶卡片樣式 */
-        .customer-item {
-            background: rgba(255, 255, 255, 0.03);
-            margin: 12px;
-            padding: 20px;
-            border-radius: 18px;
-            border-left: 4px solid var(--gold-main);
-        }
-
-        /* 實體金屬按鈕 */
+        /* 儲存按鈕點擊動畫 */
         .gold-btn-solid {
             background: linear-gradient(to bottom, #fde68a, #d4af37);
-            color: #1a1100;
-            font-weight: 900;
-            padding: 14px;
-            border-radius: 14px;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-            transition: all 0.2s;
-            text-align: center;
-            display: block;
-            width: 100%;
+            color: #1a1100; font-weight: 900; padding: 16px;
+            border-radius: 14px; text-align: center; display: block; width: 100%;
+            transition: transform 0.1s, opacity 0.2s;
+            cursor: pointer; border: none;
         }
+        .gold-btn-solid:active { transform: scale(0.96); opacity: 0.9; }
 
         input, select {
-            background: rgba(0,0,0,0.4) !important;
+            background: rgba(0,0,0,0.5) !important;
             border: 1px solid var(--gold-dark) !important;
             color: var(--gold-bright) !important;
-            padding: 16px !important;
-            border-radius: 14px !important;
-            outline: none;
+            padding: 16px !important; border-radius: 14px !important; width: 100%;
         }
-        ::placeholder { color: var(--gold-dark); opacity: 0.8; }
     </style>
 </head>
 <body class="p-5 pb-24">
 
-    <header class="py-10 text-center">銷售開發系統<h1 class="text-4xl font-black text-gradient-gold tracking-[0.15em]">
-        <p class="text-[10px] text-[#8e6d13] tracking-[0.3em] mt-2 font-bold uppercase">Premium Management System</p>
+    <header class="py-10 text-center">
+        <h1 class="text-4xl font-black text-gradient-gold tracking-widest">EMPIRE CRM</h1>
+        <p id="status-text" class="text-[10px] text-yellow-900 mt-2 font-bold uppercase">系統連線中...</p>
     </header>
 
-    <div class="flow-border mb-10">
-        <div class="glass-card p-6">
-            <h2 class="text-lg font-bold mb-5 text-gradient-gold">＋ 尊榮客戶登錄</h2>
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="name" placeholder="客戶尊稱">
-                    <input type="text" id="contact" placeholder="聯絡資訊">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="course" placeholder="需求項目">
-                    <input type="number" id="value" placeholder="預算金額">
-                </div>
-                <select id="stage" class="w-full">
-                    <option value="lead">新開發階段 (LEAD)</option>
-                    <option value="contacted">洽談中階段 (DEAL)</option>
-                    <option value="won">成交紀錄 (WON)</option>
-                </select>
-                <button onclick="saveToCloud()" class="gold-btn-solid">確認寫入資料庫</button>
+    <div class="glass-card p-6 mb-10 border-2 border-yellow-900/30">
+        <h2 class="text-lg font-bold mb-5 text-gradient-gold">＋ 尊榮客戶登錄</h2>
+        <div class="space-y-4">
+            <input type="text" id="name" placeholder="客戶尊稱 (必填)">
+            <input type="text" id="contact" placeholder="聯絡資訊 (電話/LINE)">
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="course" placeholder="需求項目">
+                <input type="number" id="value" placeholder="預算金額">
             </div>
+            <select id="stage">
+                <option value="lead">新開發階段 (LEAD)</option>
+                <option value="contacted">洽談中階段 (DEAL)</option>
+                <option value="won">成交紀錄 (WON)</option>
+            </select>
+            <button onclick="handleSave()" class="gold-btn-solid">確認寫入資料庫</button>
         </div>
     </div>
 
-    <div id="kanban" class="space-y-6">
-        <div class="glass-card">
-            <div class="section-header" onclick="toggle('list-lead')">
-                <div>
-                    <span class="text-xl font-black text-gradient-gold">新開發</span>
-                    <span class="text-[10px] text-[#8e6d13] ml-2 tracking-widest">LEADS</span>
-                </div>
-                <span id="count-lead" class="count-badge">0</span>
-            </div>
-            <div id="list-lead" class="pb-4 hidden"></div>
+    <div id="kanban" class="space-y-4">
         </div>
-
-        <div class="glass-card">
-            <div class="section-header" onclick="toggle('list-contacted')">
-                <div>
-                    <span class="text-xl font-black text-gradient-gold">洽談中</span>
-                    <span class="text-[10px] text-[#8e6d13] ml-2 tracking-widest">DEALS</span>
-                </div>
-                <span id="count-contacted" class="count-badge">0</span>
-            </div>
-            <div id="list-contacted" class="pb-4 hidden"></div>
-        </div>
-
-        <div class="glass-card">
-            <div class="section-header" onclick="toggle('list-won')">
-                <div>
-                    <span class="text-xl font-black text-[#10b981] filter brightness-125">已成交</span>
-                    <span class="text-[10px] text-green-900 ml-2 tracking-widest">SUCCESS</span>
-                </div>
-                <span id="count-won" class="count-badge" style="background: #10b981;">0</span>
-            </div>
-            <div id="list-won" class="pb-4 hidden"></div>
-        </div>
-    </div>
 
     <script>
-        // --- Firebase Config ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+        // 1. 請在此填寫您的正確配置
+        const firebaseConfig = {
+            apiKey: "您的API金鑰",
+            databaseURL: "您的資料庫網址",
+            projectId: "您的專案ID"
+        };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-  measurementId: "G-XS22B43TYM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        function toggle(id) { document.getElementById(id).classList.toggle('hidden'); }
-
-        // 即時監聽
-        db.ref('leads').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            render(data);
-        });
-
-        function render(data) {
-            const groups = { lead: '', contacted: '', won: '' };
-            const counts = { lead: 0, contacted: 0, won: 0 };
-
-            Object.keys(data).forEach(id => {
-                const item = data[id];
-                const html = `
-                    <div class="customer-item">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <div class="text-2xl font-bold text-white mb-1">${item.name}</div>
-                                <div class="text-sm text-[#8e6d13] font-bold tracking-tighter">${item.course}</div>
-                            </div>
-                            <div class="text-2xl font-black text-gradient-gold">$${Number(item.value).toLocaleString()}</div>
-                        </div>
-                        <div class="flex gap-2 mt-5">
-                            <div class="flex-1 bg-black/40 p-3 rounded-lg text-xs border border-yellow-900/30">
-                                <span class="text-[#8e6d13] block mb-1 uppercase">Contact info</span>
-                                <span class="text-yellow-100 font-bold text-sm">${item.contact}</span>
-                            </div>
-                            <button onclick="deleteData('${id}')" class="px-4 bg-red-950/20 text-red-800 rounded-lg text-xs font-bold border border-red-900/30">刪除</button>
-                        </div>
-                    </div>
-                `;
-                if(groups[item.stage] !== undefined) {
-                    groups[item.stage] += html;
-                    counts[item.stage]++;
-                }
-            });
-
-            for (let s in groups) {
-                document.getElementById('list-'+s).innerHTML = groups[s] || '<p class="text-center py-10 text-xs text-yellow-900">暫無尊榮客戶紀錄</p>';
-                document.getElementById('count-'+s).innerText = counts[s];
-            }
+        // 2. 初始化檢查
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            document.getElementById('status-text').innerText = "🟢 系統已就緒 (雲端模式)";
+        } catch (e) {
+            document.getElementById('status-text').innerText = "🔴 連線失敗，請檢查 Config";
+            console.error(e);
         }
 
-        function saveToCloud() {
-            const name = document.getElementById('name').value;
-            if(!name) return alert("請輸入客戶稱呼");
+        // 3. 儲存函數 (改名為 handleSave 避免衝突)
+        function handleSave() {
+            const nameEl = document.getElementById('name');
+            const contactEl = document.getElementById('contact');
+            const courseEl = document.getElementById('course');
+            const valueEl = document.getElementById('value');
+            const stageEl = document.getElementById('stage');
+
+            if (!nameEl.value) {
+                alert("請輸入客戶尊稱");
+                return;
+            }
+
             const payload = {
-                name,
-                contact: document.getElementById('contact').value,
-                course: document.getElementById('course').value,
-                value: document.getElementById('value').value || 0,
-                stage: document.getElementById('stage').value,
+                name: nameEl.value,
+                contact: contactEl.value,
+                course: courseEl.value || "一般諮詢",
+                value: valueEl.value || 0,
+                stage: stageEl.value,
                 time: Date.now()
             };
-            db.ref('leads').push(payload).then(() => {
-                document.getElementById('name').value = '';
-                document.getElementById('contact').value = '';
-            });
+
+            // 執行寫入
+            db.ref('leads').push(payload)
+                .then(() => {
+                    alert("✨ 資料已成功寫入雲端");
+                    // 清空輸入框
+                    nameEl.value = '';
+                    contactEl.value = '';
+                    courseEl.value = '';
+                    valueEl.value = '';
+                })
+                .catch((error) => {
+                    alert("❌ 儲存失敗：" + error.message);
+                    console.error(error);
+                });
         }
 
-        function deleteData(id) {
-            if(confirm('確定要移除此客戶紀錄？')) db.ref('leads').child(id).remove();
+        // 4. 即時渲染看板 (簡化版確保穩定)
+        db.ref('leads').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            const kanban = document.getElementById('kanban');
+            kanban.innerHTML = ''; // 清空
+
+            const stages = { lead: '新開發', contacted: '洽談中', won: '已成交' };
+            
+            for (let s in stages) {
+                const filtered = Object.keys(data).filter(id => data[id].stage === s);
+                let html = `
+                    <div class="glass-card p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xl font-bold text-gradient-gold">${stages[s]}</span>
+                            <span class="bg-yellow-600 text-black px-2 py-1 rounded-md font-black text-sm">${filtered.length}</span>
+                        </div>
+                        <div class="space-y-3">
+                `;
+
+                filtered.forEach(id => {
+                    const item = data[id];
+                    html += `
+                        <div class="bg-black/30 p-4 rounded-xl border border-yellow-900/20">
+                            <div class="flex justify-between items-center">
+                                <span class="text-white text-lg font-bold">${item.name}</span>
+                                <span class="text-gradient-gold font-black">$${Number(item.value).toLocaleString()}</span>
+                            </div>
+                            <div class="text-xs text-yellow-800 mt-1 uppercase tracking-tighter">${item.course} | ${item.contact}</div>
+                            <button onclick="deleteItem('${id}')" class="text-[10px] text-red-900 mt-2 font-bold">移除紀錄</button>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+                kanban.innerHTML += html;
+            }
+        });
+
+        function deleteItem(id) {
+            if(confirm('確定刪除？')) db.ref('leads').child(id).remove();
         }
     </script>
 </body>
 </html>
-
