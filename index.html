@@ -3,87 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - 除錯穩定版</title>
+    <title>銷售開發系統 - 精品流金版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --gold: #d4af37; --dark-gold: #8e6d13; --bg: #0a0a0a; --card-bg: #161616; }
-        body { background-color: var(--bg); color: #d1d1d1; font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
-        .breath-border { border: 1px solid var(--dark-gold); animation: breathe 4s infinite ease-in-out; }
-        @keyframes breathe {
-            0%, 100% { border-color: var(--dark-gold); box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
-            50% { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+        :root { 
+            --gold-bright: #fde68a; 
+            --gold-main: #d4af37; 
+            --gold-dark: #8e6d13;
+            --bg-black: #050505;
         }
-        .gold-btn { background: linear-gradient(135deg, var(--dark-gold), var(--gold), var(--dark-gold)); background-size: 200% 200%; animation: gold-flow 4s infinite linear; color: #000; font-weight: bold; }
-        @keyframes gold-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .kanban-wrapper { display: flex; overflow-x: auto; gap: 1rem; padding: 1rem; scroll-snap-type: x mandatory; }
-        .kanban-column { flex: 0 0 85vw; scroll-snap-align: center; background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 1rem; min-height: 50vh; }
-        .customer-card { background: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem; }
-        #details-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1.5rem; }
-        input, select { background: #1a1a1a !important; border: 1px solid #333 !important; color: #fff !important; }
-        /* 訊息提示 */
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 200; padding: 12px 24px; border-radius: 8px; font-weight: bold; display: none; }
+        
+        body { 
+            background-color: var(--bg-black); 
+            color: var(--gold-main); 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-image: radial-gradient(circle at top right, #1a150a, transparent);
+        }
+
+        /* 漸層金屬字體 */
+        .text-gradient-gold {
+            background: linear-gradient(to bottom, #fff6d5 0%, #d4af37 50%, #8e6d13 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+        /* 毛玻璃效果卡片 */
+        .glass-card {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 流動金光邊框動畫 */
+        .flow-border {
+            position: relative;
+            padding: 1px; /* 邊框厚度 */
+            background: linear-gradient(90deg, transparent, var(--gold-main), transparent);
+            background-size: 200% 100%;
+            animation: flow 4s linear infinite;
+            border-radius: 24px;
+        }
+        @keyframes flow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 下拉手風琴樣式 */
+        .section-header {
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, var(--gold-bright), var(--gold-main));
+            color: #000;
+            font-weight: 900;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* 客戶卡片樣式 */
+        .customer-item {
+            background: rgba(255, 255, 255, 0.03);
+            margin: 12px;
+            padding: 20px;
+            border-radius: 18px;
+            border-left: 4px solid var(--gold-main);
+        }
+
+        /* 實體金屬按鈕 */
+        .gold-btn-solid {
+            background: linear-gradient(to bottom, #fde68a, #d4af37);
+            color: #1a1100;
+            font-weight: 900;
+            padding: 14px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transition: all 0.2s;
+            text-align: center;
+            display: block;
+            width: 100%;
+        }
+
+        input, select {
+            background: rgba(0,0,0,0.4) !important;
+            border: 1px solid var(--gold-dark) !important;
+            color: var(--gold-bright) !important;
+            padding: 16px !important;
+            border-radius: 14px !important;
+            outline: none;
+        }
+        ::placeholder { color: var(--gold-dark); opacity: 0.8; }
     </style>
 </head>
-<body class="pb-24">
+<body class="p-5 pb-24">
 
-    <div id="toast"></div>
-
-    <header class="p-6 text-center">銷售開發系統 <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 to-yellow-600">h11
-        <p id="sync-status" class="text-[10px] text-yellow-800 uppercase mt-1">連線狀態：檢測中...</p>
+    <header class="py-10 text-center">銷售開發系統<h1 class="text-4xl font-black text-gradient-gold tracking-[0.15em]">h11
+        <p class="text-[10px] text-[#8e6d13] tracking-[0.3em] mt-2 font-bold uppercase">Premium Management System</p>
     </header>
 
-    <div class="px-4 mb-6">
-        <details class="breath-border rounded-xl p-4 bg-zinc-950" id="form-details">
-            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none font-bold">＋ 登錄資料 (自動保存草稿)</summary>
-            <form id="add-lead-form" class="mt-4 space-y-3">
-                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-3 rounded-lg draft-sync">
-                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-3 rounded-lg draft-sync">
-                <select id="stage-select" class="w-full p-3 rounded-lg draft-sync">
-                    <option value="lead">新開發 (Lead)</option>
-                    <option value="contacted">洽談中 (Contacted)</option>
-                    <option value="won">已成交 (Won)</option>
-                </select>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="course" placeholder="需求項目" class="w-full p-3 rounded-lg draft-sync">
-                    <input type="number" id="value" placeholder="金額" class="w-full p-3 rounded-lg draft-sync">
+    <div class="flow-border mb-10">
+        <div class="glass-card p-6">
+            <h2 class="text-lg font-bold mb-5 text-gradient-gold">＋ 尊榮客戶登錄</h2>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="name" placeholder="客戶尊稱">
+                    <input type="text" id="contact" placeholder="聯絡資訊">
                 </div>
-                <button type="submit" class="gold-btn w-full py-3 rounded-lg shadow-lg">寫入對應面板</button>
-            </form>
-        </details>
-    </div>
-
-    <div class="kanban-wrapper" id="kanban-board">
-        <div class="kanban-column" data-stage="lead">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>新開發</span><span class="count text-xs opacity-50">0</span></h2>
-            <div id="lead-list" class="stage-list min-h-[300px]"></div>
-        </div>
-        <div class="kanban-column" data-stage="contacted">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>洽談中</span><span class="count text-xs opacity-50">0</span></h2>
-            <div id="contacted-list" class="stage-list min-h-[300px]"></div>
-        </div>
-        <div class="kanban-column" data-stage="won">
-            <h2 class="text-green-500 font-bold mb-4 flex justify-between"><span>已成交</span><span class="count text-xs opacity-50">0</span></h2>
-            <div id="won-list" class="stage-list min-h-[300px]"></div>
-        </div>
-    </div>
-
-    <div id="details-modal">
-        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-xs rounded-2xl p-6 relative">
-            <h2 id="modal-name" class="text-2xl font-bold text-yellow-500 mb-4">詳情</h2>
-            <div class="space-y-4 text-sm" id="modal-content"></div>
-            <div class="mt-8 flex gap-2">
-                <button onclick="closeModal()" class="flex-1 py-3 rounded-lg bg-zinc-800 text-white">關閉</button>
-                <button id="modal-delete-btn" class="px-4 py-3 rounded-lg bg-red-900/20 text-red-500">刪除</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="course" placeholder="需求項目">
+                    <input type="number" id="value" placeholder="預算金額">
+                </div>
+                <select id="stage" class="w-full">
+                    <option value="lead">新開發階段 (LEAD)</option>
+                    <option value="contacted">洽談中階段 (DEAL)</option>
+                    <option value="won">成交紀錄 (WON)</option>
+                </select>
+                <button onclick="saveToCloud()" class="gold-btn-solid">確認寫入資料庫</button>
             </div>
         </div>
     </div>
 
+    <div id="kanban" class="space-y-6">
+        <div class="glass-card">
+            <div class="section-header" onclick="toggle('list-lead')">
+                <div>
+                    <span class="text-xl font-black text-gradient-gold">新開發</span>
+                    <span class="text-[10px] text-[#8e6d13] ml-2 tracking-widest">LEADS</span>
+                </div>
+                <span id="count-lead" class="count-badge">0</span>
+            </div>
+            <div id="list-lead" class="pb-4 hidden"></div>
+        </div>
+
+        <div class="glass-card">
+            <div class="section-header" onclick="toggle('list-contacted')">
+                <div>
+                    <span class="text-xl font-black text-gradient-gold">洽談中</span>
+                    <span class="text-[10px] text-[#8e6d13] ml-2 tracking-widest">DEALS</span>
+                </div>
+                <span id="count-contacted" class="count-badge">0</span>
+            </div>
+            <div id="list-contacted" class="pb-4 hidden"></div>
+        </div>
+
+        <div class="glass-card">
+            <div class="section-header" onclick="toggle('list-won')">
+                <div>
+                    <span class="text-xl font-black text-[#10b981] filter brightness-125">已成交</span>
+                    <span class="text-[10px] text-green-900 ml-2 tracking-widest">SUCCESS</span>
+                </div>
+                <span id="count-won" class="count-badge" style="background: #10b981;">0</span>
+            </div>
+            <div id="list-won" class="pb-4 hidden"></div>
+        </div>
+    </div>
+
     <script>
-        // --- 請務必正確填入您的 Firebase 配置 ---
+        // --- Firebase Config ---
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
@@ -106,120 +199,73 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // 初始化 Firebase 並攔截錯誤
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            showToast("系統已連結", "bg-green-900 text-green-200");
-        } catch (e) {
-            showToast("連結失敗：請檢查 Config", "bg-red-900 text-red-200");
-        }
+        function toggle(id) { document.getElementById(id).classList.toggle('hidden'); }
 
-        const leadsRef = db.ref('leads');
-
-        // 草稿還原與本地快照
-        window.onload = () => {
-            const savedDraft = localStorage.getItem('form_draft');
-            if (savedDraft) {
-                const draft = JSON.parse(savedDraft);
-                Object.keys(draft).forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = draft[id]; });
-            }
-            const backup = localStorage.getItem('local_leads_backup');
-            if (backup) renderLeads(JSON.parse(backup));
-        };
-
-        // 監聽草稿
-        document.querySelectorAll('.draft-sync').forEach(i => {
-            i.oninput = () => {
-                const d = {};
-                document.querySelectorAll('.draft-sync').forEach(inp => d[inp.id] = inp.value);
-                localStorage.setItem('form_draft', JSON.stringify(d));
-            }
+        // 即時監聽
+        db.ref('leads').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            render(data);
         });
 
-        // 讀取與渲染
-        leadsRef.on('value', (s) => {
-            const data = s.val() || {};
-            localStorage.setItem('local_leads_backup', JSON.stringify(data));
-            renderLeads(data);
-            document.getElementById('sync-status').innerText = "數據同步中：雲端已更新";
-        }, (err) => {
-            showToast("權限錯誤：請檢查 Firebase Rules", "bg-red-900 text-red-200");
-        });
+        function render(data) {
+            const groups = { lead: '', contacted: '', won: '' };
+            const counts = { lead: 0, contacted: 0, won: 0 };
 
-        function renderLeads(leads) {
-            document.querySelectorAll('.stage-list').forEach(el => el.innerHTML = '');
-            Object.keys(leads).forEach(id => {
-                const lead = leads[id];
-                const card = document.createElement('div');
-                card.className = 'customer-card';
-                card.dataset.id = id;
-                card.onclick = () => openModal(id, lead);
-                card.innerHTML = `<div class="flex justify-between font-bold"><span>${lead.name}</span><span class="text-yellow-600">$${Number(lead.value).toLocaleString()}</span></div>`;
-                const target = document.getElementById(`${lead.stage}-list`);
-                if (target) target.appendChild(card);
+            Object.keys(data).forEach(id => {
+                const item = data[id];
+                const html = `
+                    <div class="customer-item">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="text-2xl font-bold text-white mb-1">${item.name}</div>
+                                <div class="text-sm text-[#8e6d13] font-bold tracking-tighter">${item.course}</div>
+                            </div>
+                            <div class="text-2xl font-black text-gradient-gold">$${Number(item.value).toLocaleString()}</div>
+                        </div>
+                        <div class="flex gap-2 mt-5">
+                            <div class="flex-1 bg-black/40 p-3 rounded-lg text-xs border border-yellow-900/30">
+                                <span class="text-[#8e6d13] block mb-1 uppercase">Contact info</span>
+                                <span class="text-yellow-100 font-bold text-sm">${item.contact}</span>
+                            </div>
+                            <button onclick="deleteData('${id}')" class="px-4 bg-red-950/20 text-red-800 rounded-lg text-xs font-bold border border-red-900/30">刪除</button>
+                        </div>
+                    </div>
+                `;
+                if(groups[item.stage] !== undefined) {
+                    groups[item.stage] += html;
+                    counts[item.stage]++;
+                }
             });
-            updateCounts();
+
+            for (let s in groups) {
+                document.getElementById('list-'+s).innerHTML = groups[s] || '<p class="text-center py-10 text-xs text-yellow-900">暫無尊榮客戶紀錄</p>';
+                document.getElementById('count-'+s).innerText = counts[s];
+            }
         }
 
-        // 寫入邏輯
-        document.getElementById('add-lead-form').onsubmit = function(e) {
-            e.preventDefault();
-            const newLead = {
-                name: document.getElementById('name').value,
+        function saveToCloud() {
+            const name = document.getElementById('name').value;
+            if(!name) return alert("請輸入客戶稱呼");
+            const payload = {
+                name,
                 contact: document.getElementById('contact').value,
-                stage: document.getElementById('stage-select').value,
                 course: document.getElementById('course').value,
                 value: document.getElementById('value').value || 0,
-                timestamp: Date.now()
+                stage: document.getElementById('stage').value,
+                time: Date.now()
             };
-
-            leadsRef.push(newLead)
-                .then(() => {
-                    showToast("寫入成功", "bg-yellow-600 text-black");
-                    localStorage.removeItem('form_draft');
-                    this.reset();
-                    document.getElementById('form-details').open = false;
-                })
-                .catch(err => {
-                    alert("寫入失敗！請確認 Firebase 控制台的 Rules 是否設為 true。\n錯誤訊息：" + err.message);
-                });
-        };
-
-        function showToast(msg, colorClass) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.className = colorClass;
-            t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 3000);
-        }
-
-        function openModal(id, lead) {
-            document.getElementById('modal-name').innerText = lead.name;
-            document.getElementById('modal-content').innerHTML = `<p class='mb-2'>聯絡：${lead.contact}</p><p class='mb-2'>項目：${lead.course || '無'}</p><p class='text-yellow-500 font-bold'>金額：$${Number(lead.value).toLocaleString()}</p>`;
-            document.getElementById('modal-delete-btn').onclick = () => { if(confirm('刪除？')) { leadsRef.child(id).remove(); closeModal(); } };
-            document.getElementById('details-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
-        
-        function updateCounts() {
-            document.querySelectorAll('.kanban-column').forEach(col => {
-                col.querySelector('.count').innerText = col.querySelectorAll('.customer-card').length;
+            db.ref('leads').push(payload).then(() => {
+                document.getElementById('name').value = '';
+                document.getElementById('contact').value = '';
             });
         }
 
-        document.querySelectorAll('.stage-list').forEach(list => {
-            new Sortable(list, { group: 'kanban', animation: 150, onEnd: (evt) => {
-                const id = evt.item.dataset.id;
-                const newStage = evt.to.parentElement.dataset.stage;
-                leadsRef.child(id).update({ stage: newStage });
-            }});
-        });
+        function deleteData(id) {
+            if(confirm('確定要移除此客戶紀錄？')) db.ref('leads').child(id).remove();
+        }
     </script>
 </body>
 </html>
-
-
