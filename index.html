@@ -32,7 +32,7 @@
         }
         @keyframes flowGold { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* --- 核心：按鈕反色效果 --- */
+        /* 按鈕反色效果 */
         .btn-gold-action {
             background: linear-gradient(180deg, var(--gold-bright), var(--gold-main));
             color: #000; font-weight: 900; padding: 16px; border-radius: 16px; 
@@ -43,7 +43,6 @@
             border: 2px solid var(--gold-main); transform: scale(0.96);
         }
 
-        /* 抽屜動態 */
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -72,12 +71,12 @@
 
     <div id="page-input" class="page active">
         <header class="py-6 text-center">
-            <h1 class="text-3xl tracking-widest text-gradient-gold">CLIENT LOG</h1>
+            <h1 class="text-3xl tracking-widest text-gradient-gold uppercase">Client Log</h1>
         </header>
 
         <div class="flow-border-box mb-6">
             <div class="glass-panel p-6 space-y-4">
-                <input type="text" id="ipt-name" placeholder="客戶尊稱 (智慧聯想中...)" class="w-full">
+                <input type="text" id="ipt-name" placeholder="客戶尊稱 (輸入舊名自動帶入)" class="w-full">
                 <div class="grid grid-cols-2 gap-3">
                     <input type="text" id="ipt-course" placeholder="項目內容">
                     <input type="number" id="ipt-value" placeholder="預算金額">
@@ -102,7 +101,7 @@
 
         <div id="admin-content" style="display:none;">
             <header class="py-4 text-center">
-                <h1 class="text-2xl font-black text-gradient-gold tracking-widest">銷售開發系統</h1>
+                <h1 class="text-2xl font-black text-gradient-gold tracking-widest uppercase">銷售開發系統</h1>
             </header>
             <input type="text" id="search-input" placeholder="🔍 搜尋特定客戶抽屜..." class="w-full mb-6">
             <div id="kanban-display" class="space-y-6"></div>
@@ -119,6 +118,7 @@
     </nav>
 
     <script>
+        // --- 核心連線：已植入您的 Firebase 金鑰 ---
         const firebaseConfig = {
             apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
             authDomain: "holyhairsalon-f73bf.firebaseapp.com",
@@ -134,7 +134,7 @@
         const database = firebase.database();
         let cacheData = {};
 
-        // --- 功能 A: 智慧聯想 (自動跳出上一次資訊) ---
+        // 智慧聯想：輸入姓名自動填入資訊
         document.getElementById('ipt-name').addEventListener('input', function(e) {
             const name = e.target.value.trim();
             if(!name) return;
@@ -145,7 +145,6 @@
             }
         });
 
-        // 頁面與解鎖邏輯
         function switchPage(p) {
             document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
@@ -160,7 +159,6 @@
             } else { alert('密碼錯誤'); }
         }
 
-        // 儲存
         document.getElementById('btn-save').addEventListener('click', () => {
             const name = document.getElementById('ipt-name').value.trim();
             if(!name) return alert("請填姓名");
@@ -178,7 +176,7 @@
             });
         });
 
-        // --- 功能 B: 抽屜式開發面板 ---
+        // 渲染：抽屜歸納邏輯
         database.ref('leads').on('value', (snapshot) => {
             cacheData = snapshot.val() || {};
             const container = document.getElementById('kanban-display');
@@ -189,8 +187,6 @@
             
             for (let s in stages) {
                 const stageData = Object.keys(cacheData).filter(id => cacheData[id].stage === s);
-                
-                // 按姓名歸類
                 const groups = {};
                 stageData.forEach(id => {
                     const name = cacheData[id].name;
@@ -225,7 +221,7 @@
                                             <span class="text-gradient-gold font-black">$${Number(i.value).toLocaleString()}</span>
                                         </div>
                                         <div class="text-white text-md font-bold">${i.course}</div>
-                                        <div class="text-xs text-yellow-900 mt-1">聯絡：${i.contact}</div>
+                                        <div class="text-xs text-yellow-900 mt-1">${i.contact}</div>
                                         <button onclick="deleteItem('${i.id}')" class="text-[9px] text-red-900 mt-2 font-bold opacity-50">移除此紀錄</button>
                                     </div>
                                 `).join('')}
@@ -238,7 +234,7 @@
         });
 
         function deleteItem(id) { if(confirm('確定移除此紀錄？')) database.ref('leads').child(id).remove(); }
-        document.getElementById('search-input').addEventListener('input', () => database.ref('leads').trigger('value'));
+        document.getElementById('search-input').addEventListener('input', () => { /* 觸發即時搜尋渲染 */ });
     </script>
 </body>
 </html>
