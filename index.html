@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - 本地永續版</title>
+    <title>EMPIRE CRM - 專業二段式版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
         :root { --gold: #d4af37; --dark-gold: #8e6d13; --bg: #0a0a0a; --card-bg: #161616; }
-        body { background-color: var(--bg); color: #d1d1d1; font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
+        body { background-color: var(--bg); color: #d1d1d1; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; }
         
-        /* 呼吸發光效果 */
+        /* 頁面切換動畫 */
+        .page { display: none; height: 100vh; overflow-y: auto; padding-bottom: 80px; transition: all 0.3s ease; }
+        .page.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 呼吸發光與金屬按鈕 */
         .breath-border { border: 1px solid var(--dark-gold); animation: breathe 4s infinite ease-in-out; }
         @keyframes breathe {
-            0%, 100% { border-color: var(--dark-gold); box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
-            50% { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+            0%, 100% { border-color: var(--dark-gold); box-shadow: 0 0 5px rgba(212, 175, 55, 0.1); }
+            50% { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
         }
-
-        /* 4秒金屬流光按鈕 */
         .gold-btn {
             background: linear-gradient(135deg, var(--dark-gold), var(--gold), var(--dark-gold));
             background-size: 200% 200%; animation: gold-flow 4s infinite linear;
@@ -28,254 +30,268 @@
         }
         @keyframes gold-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* 手機看板捲動優化 */
-        .kanban-wrapper { display: flex; overflow-x: auto; gap: 1rem; padding: 1rem; scroll-snap-type: x mandatory; }
-        .kanban-column { flex: 0 0 85vw; scroll-snap-align: center; background: rgba(15, 15, 15, 0.95); border-radius: 20px; padding: 1.25rem; min-height: 60vh; border: 1px solid #1a1a1a; }
-        
-        .customer-card { background: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        
-        #details-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1.5rem; }
-        input, select { background: #1a1a1a !important; border: 1px solid #333 !important; color: #fff !important; }
-        
-        .status-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .sync-local { background: #1e3a8a; color: #bfdbfe; } /* 本地儲存中 */
-        .sync-cloud { background: #064e3b; color: #a7f3d0; } /* 雲端已備份 */
+        /* 風琴式抽屜樣式 */
+        .accordion-header { background: #1a1a1a; border-left: 4px solid var(--gold); margin-bottom: 2px; }
+        .accordion-content { background: #111; overflow: hidden; max-height: 0; transition: max-height 0.3s ease-out; }
+        .accordion-item.open .accordion-content { max-height: 500px; padding: 15px; border-bottom: 1px solid #333; }
+        .accordion-item.open .chevron { transform: rotate(180deg); }
+
+        /* 底部導覽列 */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #111; border-top: 1px solid #222; display: flex; z-index: 100; }
+        .nav-item { flex: 1; text-align: center; padding: 15px; color: #555; font-size: 12px; transition: 0.3s; }
+        .nav-item.active { color: var(--gold); font-weight: bold; }
+
+        input, select, textarea { background: #1a1a1a !important; border: 1px solid #333 !important; color: #fff !important; }
     </style>
 </head>
-<body class="pb-24">
+<body>
 
-    <header class="p-6 text-center">
-        <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 to-yellow-600">EMPIRE CRM</h1>
-        <div id="connection-indicator" class="text-[10px] mt-2 text-gray-500">系統狀態：初始化本地數據庫...</div>
-    </header>
+    <div id="page-add" class="page active px-6 pt-10">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600">顧客登錄</h1>
+            <p class="text-[10px] text-gray-500 mt-2 uppercase">Empire Premium Entry</p>
+        </header>
 
-    <div class="px-4 mb-6">
-        <details class="breath-border rounded-xl p-4 bg-zinc-950" id="form-container">
-            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none font-bold">＋ 快速登錄資料 (防閃退模式)</summary>
-            <form id="lead-form" class="mt-4 space-y-4">
-                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-4 rounded-xl draft-sync">
-                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-4 rounded-xl draft-sync">
-                
-                <div class="space-y-1">
-                    <label class="text-[10px] text-yellow-700 ml-1 tracking-widest">目前開發階段</label>
-                    <select id="stage" class="w-full p-4 rounded-xl draft-sync">
+        <div class="breath-border rounded-2xl p-6 bg-zinc-950">
+            <form id="lead-form" class="space-y-5">
+                <input type="hidden" id="edit-id"> <div>
+                    <label class="text-xs text-yellow-700 ml-1">客戶全名</label>
+                    <input type="text" id="name" required class="w-full p-4 rounded-xl mt-1 draft-sync">
+                </div>
+                <div>
+                    <label class="text-xs text-yellow-700 ml-1">聯絡電話 / LINE</label>
+                    <input type="text" id="contact" required class="w-full p-4 rounded-xl mt-1 draft-sync">
+                </div>
+                <div>
+                    <label class="text-xs text-yellow-700 ml-1">目前開發階段</label>
+                    <select id="stage" class="w-full p-4 rounded-xl mt-1 draft-sync">
                         <option value="lead">新開發 (Lead)</option>
                         <option value="contacted">洽談中 (Contacted)</option>
                         <option value="won">已成交 (Won)</option>
                     </select>
                 </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="course" placeholder="項目內容" class="p-4 rounded-xl draft-sync">
-                    <input type="number" id="value" placeholder="預估預算" class="p-4 rounded-xl draft-sync">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-yellow-700 ml-1">預約項目</label>
+                        <input type="text" id="course" class="w-full p-4 rounded-xl mt-1 draft-sync">
+                    </div>
+                    <div>
+                        <label class="text-xs text-yellow-700 ml-1">預估金額</label>
+                        <input type="number" id="value" class="w-full p-4 rounded-xl mt-1 draft-sync">
+                    </div>
                 </div>
-                <button type="submit" class="gold-btn w-full py-4 rounded-xl shadow-2xl text-lg">確認儲存至本地與雲端</button>
+                <button type="submit" id="submit-btn" class="gold-btn w-full py-5 rounded-2xl shadow-2xl text-lg mt-4">確認儲存</button>
+                <button type="button" id="cancel-edit" class="hidden w-full py-2 text-gray-500 text-sm">取消修改</button>
             </form>
-        </details>
-    </div>
-
-    <div class="kanban-wrapper">
-        <div class="kanban-column" data-stage="lead">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>新開發</span> <span class="count text-xs">0</span></h2>
-            <div id="lead-list" class="stage-list min-h-[300px]"></div>
-        </div>
-        <div class="kanban-column" data-stage="contacted">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>洽談中</span> <span class="count text-xs">0</span></h2>
-            <div id="contacted-list" class="stage-list min-h-[300px]"></div>
-        </div>
-        <div class="kanban-column" data-stage="won">
-            <h2 class="text-green-500 font-bold mb-4 flex justify-between"><span>已成交</span> <span class="count text-xs">0</span></h2>
-            <div id="won-list" class="stage-list min-h-[300px]"></div>
         </div>
     </div>
 
-    <div id="details-modal">
-        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-xs rounded-3xl p-8 relative">
-            <div id="modal-status-tag" class="mb-2"></div>
-            <h2 id="m-name" class="text-3xl font-bold text-yellow-500 mb-6"></h2>
-            <div class="space-y-5 text-sm" id="m-body"></div>
-            <div class="mt-10 flex gap-3">
-                <button onclick="closeModal()" class="flex-1 py-4 rounded-2xl bg-zinc-800 text-white font-bold">關閉</button>
-                <button id="m-delete" class="px-6 py-4 rounded-2xl bg-red-900/20 text-red-500 font-bold">刪除</button>
-            </div>
+    <div id="page-list" class="page px-4 pt-6">
+        <header class="text-center mb-6">
+            <h1 class="text-xl font-bold text-yellow-500 tracking-widest">進度管理</h1>
+        </header>
+
+        <div class="space-y-4">
+            <section class="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+                <div class="p-4 bg-zinc-800/50 font-bold text-yellow-600 flex justify-between items-center">
+                    <span>新開發 (Lead)</span>
+                    <span id="count-lead" class="text-xs bg-black/40 px-2 py-1 rounded">0</span>
+                </div>
+                <div id="list-lead" class="divide-y divide-zinc-800"></div>
+            </section>
+
+            <section class="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+                <div class="p-4 bg-zinc-800/50 font-bold text-yellow-600 flex justify-between items-center">
+                    <span>洽談中 (Contacted)</span>
+                    <span id="count-contacted" class="text-xs bg-black/40 px-2 py-1 rounded">0</span>
+                </div>
+                <div id="list-contacted" class="divide-y divide-zinc-800"></div>
+            </section>
+
+            <section class="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+                <div class="p-4 bg-zinc-800/50 font-bold text-green-700 flex justify-between items-center">
+                    <span>已成交 (Won)</span>
+                    <span id="count-won" class="text-xs bg-black/40 px-2 py-1 rounded">0</span>
+                </div>
+                <div id="list-won" class="divide-y divide-zinc-800"></div>
+            </section>
         </div>
     </div>
+
+    <nav class="nav-bar">
+        <div class="nav-item active" onclick="switchPage('add', this)">
+            <div class="text-xl mb-1">✍️</div>
+            <div>填寫資料</div>
+        </div>
+        <div class="nav-item" onclick="switchPage('list', this)">
+            <div class="text-xl mb-1">📊</div>
+            <div>開發進度</div>
+        </div>
+    </nav>
 
     <script>
-        // --- 請更換為您的 Firebase 配置 ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCOhBN9TH3UJSOSx5XVyQ08f_2RUckvXYU",
-  authDomain: "holyhairsalon-f73bf.firebaseapp.com",
-  databaseURL: "https://holyhairsalon-f73bf-default-rtdb.firebaseio.com",
-  projectId: "holyhairsalon-f73bf",
-  storageBucket: "holyhairsalon-f73bf.firebasestorage.app",
-  messagingSenderId: "960169055224",
-  appId: "1:960169055224:web:82244b5e65983f89bf3c0d",
-  measurementId: "G-XS22B43TYM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-        // 1. 初始化環境
+        // --- Firebase 配置 ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const leadsRef = db.ref('leads');
-        
-        // 本地主資料庫
-        let localData = JSON.parse(localStorage.getItem('empire_crm_data')) || {};
 
-        // 2. 頁面載入：優先渲染本地資料
-        window.addEventListener('DOMContentLoaded', () => {
-            renderUI(localData);
-            restoreDraft();
-            
-            // 隨後同步雲端資料
-            leadsRef.on('value', (snapshot) => {
-                const cloudData = snapshot.val() || {};
-                localData = cloudData;
-                saveToLocal();
-                renderUI(localData);
-                document.getElementById('connection-indicator').innerHTML = "🟢 雲端同步成功";
-            }, (error) => {
-                document.getElementById('connection-indicator').innerHTML = "🟡 離線模式：僅使用本地儲存";
-            });
-        });
+        let localData = JSON.parse(localStorage.getItem('empire_v2_data')) || {};
 
-        // 3. 儲存邏輯 (本地優先)
+        // 1. 分頁切換
+        function switchPage(pageId, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // 2. 儲存與修改邏輯
         document.getElementById('lead-form').onsubmit = function(e) {
             e.preventDefault();
-            const id = 'lead_' + Date.now();
-            const newLead = {
+            const editId = document.getElementById('edit-id').value;
+            const id = editId || 'L' + Date.now();
+            
+            const leadData = {
                 id: id,
                 name: document.getElementById('name').value,
                 contact: document.getElementById('contact').value,
                 stage: document.getElementById('stage').value,
                 course: document.getElementById('course').value,
                 value: document.getElementById('value').value || 0,
-                sync: false // 標記尚未同步至雲端
+                updatedAt: Date.now()
             };
 
-            // 立即存入本地並更新 UI
-            localData[id] = newLead;
-            saveToLocal();
-            renderUI(localData);
-            
-            // 嘗試寫入雲端
-            leadsRef.child(id).set(newLead).then(() => {
-                localData[id].sync = true;
-                saveToLocal();
-            });
+            // 本地與雲端同步
+            localData[id] = leadData;
+            localStorage.setItem('empire_v2_data', JSON.stringify(localData));
+            leadsRef.child(id).set(leadData);
 
-            // 清除草稿與重置
+            // 重置表單
             this.reset();
-            localStorage.removeItem('crm_draft');
-            document.getElementById('form-container').open = false;
+            document.getElementById('edit-id').value = "";
+            document.getElementById('submit-btn').innerText = "確認儲存";
+            document.getElementById('cancel-edit').classList.add('hidden');
+            localStorage.removeItem('entry_draft');
+            
+            alert(editId ? "修改成功" : "登錄成功");
+            if(!editId) switchPage('list', document.querySelectorAll('.nav-item')[1]);
+            renderUI();
         };
 
-        // 4. 防閃退：草稿監聽
-        document.querySelectorAll('.draft-sync').forEach(input => {
-            input.oninput = () => {
-                const draft = {};
-                document.querySelectorAll('.draft-sync').forEach(i => draft[i.id] = i.value);
-                localStorage.setItem('crm_draft', JSON.stringify(draft));
-            };
-        });
+        // 3. 渲染風琴式抽屜
+        function renderUI() {
+            const groups = { lead: [], contacted: [], won: [] };
+            Object.values(localData).forEach(item => {
+                if(groups[item.stage]) groups[item.stage].push(item);
+            });
 
-        function restoreDraft() {
-            const draft = JSON.parse(localStorage.getItem('crm_draft'));
-            if(draft) {
-                Object.keys(draft).forEach(id => {
-                    if(document.getElementById(id)) document.getElementById(id).value = draft[id];
+            // 按更新時間排序（最新的在前）
+            ['lead', 'contacted', 'won'].forEach(stage => {
+                const listEl = document.getElementById('list-' + stage);
+                const countEl = document.getElementById('count-' + stage);
+                listEl.innerHTML = "";
+                
+                const sortedItems = groups[stage].sort((a,b) => b.updatedAt - a.updatedAt);
+                countEl.innerText = sortedItems.length;
+
+                sortedItems.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = "accordion-item";
+                    itemEl.innerHTML = `
+                        <div class="accordion-header p-4 flex justify-between items-center cursor-pointer" onclick="toggleAccordion(this)">
+                            <div>
+                                <span class="font-bold text-gray-100">${item.name}</span>
+                                <span class="text-[10px] text-gray-500 ml-2">${new Date(item.updatedAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-yellow-600 font-black">$${Number(item.value).toLocaleString()}</span>
+                                <span class="chevron text-xs transition-transform">▼</span>
+                            </div>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="space-y-3 text-sm">
+                                <p><span class="text-gray-500">聯絡方式：</span>${item.contact}</p>
+                                <p><span class="text-gray-500">需求項目：</span>${item.course || '未填'}</p>
+                                <div class="flex gap-2 pt-2">
+                                    <button onclick="editItem('${item.id}')" class="flex-1 py-2 bg-yellow-600/20 text-yellow-500 rounded-lg">修改資料</button>
+                                    <button onclick="deleteItem('${item.id}')" class="flex-1 py-2 bg-red-900/20 text-red-500 rounded-lg">刪除紀錄</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listEl.appendChild(itemEl);
                 });
-                if(draft.name) document.getElementById('form-container').open = true;
+            });
+        }
+
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const isOpen = item.classList.contains('open');
+            document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('open'));
+            if (!isOpen) item.classList.add('open');
+        }
+
+        // 4. 修改與刪除
+        function editItem(id) {
+            const item = localData[id];
+            document.getElementById('edit-id').value = id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('contact').value = item.contact;
+            document.getElementById('stage').value = item.stage;
+            document.getElementById('course').value = item.course;
+            document.getElementById('value').value = item.value;
+            
+            document.getElementById('submit-btn').innerText = "確認修改";
+            document.getElementById('cancel-edit').classList.remove('hidden');
+            switchPage('add', document.querySelectorAll('.nav-item')[0]);
+        }
+
+        function deleteItem(id) {
+            if(confirm('確定刪除？此動作無法復原。')) {
+                delete localData[id];
+                localStorage.setItem('empire_v2_data', JSON.stringify(localData));
+                leadsRef.child(id).remove();
+                renderUI();
             }
         }
 
-        // 5. 渲染函數
-        function renderUI(data) {
-            document.querySelectorAll('.stage-list').forEach(el => el.innerHTML = '');
-            Object.keys(data).forEach(id => {
-                const item = data[id];
-                const card = document.createElement('div');
-                card.className = 'customer-card';
-                card.dataset.id = id;
-                card.onclick = () => openModal(id, item);
-                card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold">
-                        <span class="text-gray-100">${item.name}</span>
-                        <span class="text-yellow-600 text-sm">$${Number(item.value).toLocaleString()}</span>
-                    </div>
-                `;
-                const list = document.getElementById(`${item.stage}-list`);
-                if(list) list.appendChild(card);
-            });
-            updateCounts();
-        }
-
-        function saveToLocal() {
-            localStorage.setItem('empire_crm_data', JSON.stringify(localData));
-        }
-
-        function updateCounts() {
-            document.querySelectorAll('.kanban-column').forEach(col => {
-                col.querySelector('.count').innerText = col.querySelectorAll('.customer-card').length;
-            });
-        }
-
-        // 6. 詳情彈窗
-        function openModal(id, item) {
-            document.getElementById('m-name').innerText = item.name;
-            document.getElementById('modal-status-tag').innerHTML = item.sync ? 
-                '<span class="status-tag sync-cloud">雲端已加密</span>' : 
-                '<span class="status-tag sync-local">本地儲存中</span>';
-            
-            document.getElementById('m-body').innerHTML = `
-                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">聯絡電話/LINE</label><p class="text-lg text-white font-medium">${item.contact}</p></div>
-                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">預約項目</label><p class="text-white">${item.course || '專屬諮詢'}</p></div>
-                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">成交價值</label><p class="text-yellow-500 text-2xl font-black">$ ${Number(item.value).toLocaleString()}</p></div>
-            `;
-            
-            document.getElementById('m-delete').onclick = () => {
-                if(confirm('刪除將無法還原，確定？')) {
-                    delete localData[id];
-                    saveToLocal();
-                    leadsRef.child(id).remove();
-                    renderUI(localData);
-                    closeModal();
-                }
-            };
-            document.getElementById('details-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
-
-        // 拖拽同步更新
-        document.querySelectorAll('.stage-list').forEach(list => {
-            new Sortable(list, {
-                group: 'kanban', animation: 150,
-                onEnd: (evt) => {
-                    const id = evt.item.dataset.id;
-                    const newStage = evt.to.parentElement.dataset.stage;
-                    if(localData[id]) {
-                        localData[id].stage = newStage;
-                        saveToLocal();
-                        leadsRef.child(id).update({ stage: newStage });
-                        updateCounts();
-                    }
-                }
-            });
+        // 5. Firebase 同步與初始化
+        leadsRef.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            localData = data;
+            localStorage.setItem('empire_v2_data', JSON.stringify(localData));
+            renderUI();
         });
+
+        // 6. 草稿功能
+        document.querySelectorAll('.draft-sync').forEach(inp => {
+            inp.oninput = () => {
+                if(document.getElementById('edit-id').value) return; // 修改模式不存草稿
+                const draft = {};
+                document.querySelectorAll('.draft-sync').forEach(i => draft[i.id] = i.value);
+                localStorage.setItem('entry_draft', JSON.stringify(draft));
+            };
+        });
+
+        window.onload = () => {
+            const draft = JSON.parse(localStorage.getItem('entry_draft'));
+            if(draft && !document.getElementById('edit-id').value) {
+                Object.keys(draft).forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = draft[k]; });
+            }
+            renderUI();
+        };
+
+        document.getElementById('cancel-edit').onclick = function() {
+            document.getElementById('lead-form').reset();
+            document.getElementById('edit-id').value = "";
+            this.classList.add('hidden');
+            document.getElementById('submit-btn').innerText = "確認儲存";
+        };
     </script>
 </body>
 </html>
-
