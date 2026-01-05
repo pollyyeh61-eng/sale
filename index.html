@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EMPIRE CRM - 除錯穩定版</title>
+    <title>EMPIRE CRM - 本地永續版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -12,195 +12,251 @@
     <style>
         :root { --gold: #d4af37; --dark-gold: #8e6d13; --bg: #0a0a0a; --card-bg: #161616; }
         body { background-color: var(--bg); color: #d1d1d1; font-family: 'Noto Sans TC', sans-serif; overflow-x: hidden; }
+        
+        /* 呼吸發光效果 */
         .breath-border { border: 1px solid var(--dark-gold); animation: breathe 4s infinite ease-in-out; }
         @keyframes breathe {
             0%, 100% { border-color: var(--dark-gold); box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
             50% { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
         }
-        .gold-btn { background: linear-gradient(135deg, var(--dark-gold), var(--gold), var(--dark-gold)); background-size: 200% 200%; animation: gold-flow 4s infinite linear; color: #000; font-weight: bold; }
+
+        /* 4秒金屬流光按鈕 */
+        .gold-btn {
+            background: linear-gradient(135deg, var(--dark-gold), var(--gold), var(--dark-gold));
+            background-size: 200% 200%; animation: gold-flow 4s infinite linear;
+            color: #000; font-weight: bold; border: none;
+        }
         @keyframes gold-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* 手機看板捲動優化 */
         .kanban-wrapper { display: flex; overflow-x: auto; gap: 1rem; padding: 1rem; scroll-snap-type: x mandatory; }
-        .kanban-column { flex: 0 0 85vw; scroll-snap-align: center; background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 1rem; min-height: 50vh; }
-        .customer-card { background: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem; }
-        #details-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1.5rem; }
+        .kanban-column { flex: 0 0 85vw; scroll-snap-align: center; background: rgba(15, 15, 15, 0.95); border-radius: 20px; padding: 1.25rem; min-height: 60vh; border: 1px solid #1a1a1a; }
+        
+        .customer-card { background: var(--card-bg); border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 0.75rem; padding: 1.25rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
+        #details-modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1.5rem; }
         input, select { background: #1a1a1a !important; border: 1px solid #333 !important; color: #fff !important; }
-        /* 訊息提示 */
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 200; padding: 12px 24px; border-radius: 8px; font-weight: bold; display: none; }
+        
+        .status-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .sync-local { background: #1e3a8a; color: #bfdbfe; } /* 本地儲存中 */
+        .sync-cloud { background: #064e3b; color: #a7f3d0; } /* 雲端已備份 */
     </style>
 </head>
 <body class="pb-24">
 
-    <div id="toast"></div>
-
     <header class="p-6 text-center">
         <h1 class="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 to-yellow-600">EMPIRE CRM</h1>
-        <p id="sync-status" class="text-[10px] text-yellow-800 uppercase mt-1">連線狀態：檢測中...</p>
+        <div id="connection-indicator" class="text-[10px] mt-2 text-gray-500">系統狀態：初始化本地數據庫...</div>
     </header>
 
     <div class="px-4 mb-6">
-        <details class="breath-border rounded-xl p-4 bg-zinc-950" id="form-details">
-            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none font-bold">＋ 登錄資料 (自動保存草稿)</summary>
-            <form id="add-lead-form" class="mt-4 space-y-3">
-                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-3 rounded-lg draft-sync">
-                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-3 rounded-lg draft-sync">
-                <select id="stage-select" class="w-full p-3 rounded-lg draft-sync">
-                    <option value="lead">新開發 (Lead)</option>
-                    <option value="contacted">洽談中 (Contacted)</option>
-                    <option value="won">已成交 (Won)</option>
-                </select>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="course" placeholder="需求項目" class="w-full p-3 rounded-lg draft-sync">
-                    <input type="number" id="value" placeholder="金額" class="w-full p-3 rounded-lg draft-sync">
+        <details class="breath-border rounded-xl p-4 bg-zinc-950" id="form-container">
+            <summary class="text-yellow-500 font-medium cursor-pointer text-center list-none font-bold">＋ 快速登錄資料 (防閃退模式)</summary>
+            <form id="lead-form" class="mt-4 space-y-4">
+                <input type="text" id="name" placeholder="客戶全名" required class="w-full p-4 rounded-xl draft-sync">
+                <input type="text" id="contact" placeholder="電話 / LINE ID" required class="w-full p-4 rounded-xl draft-sync">
+                
+                <div class="space-y-1">
+                    <label class="text-[10px] text-yellow-700 ml-1 tracking-widest">目前開發階段</label>
+                    <select id="stage" class="w-full p-4 rounded-xl draft-sync">
+                        <option value="lead">新開發 (Lead)</option>
+                        <option value="contacted">洽談中 (Contacted)</option>
+                        <option value="won">已成交 (Won)</option>
+                    </select>
                 </div>
-                <button type="submit" class="gold-btn w-full py-3 rounded-lg shadow-lg">寫入對應面板</button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="course" placeholder="項目內容" class="p-4 rounded-xl draft-sync">
+                    <input type="number" id="value" placeholder="預估預算" class="p-4 rounded-xl draft-sync">
+                </div>
+                <button type="submit" class="gold-btn w-full py-4 rounded-xl shadow-2xl text-lg">確認儲存至本地與雲端</button>
             </form>
         </details>
     </div>
 
-    <div class="kanban-wrapper" id="kanban-board">
+    <div class="kanban-wrapper">
         <div class="kanban-column" data-stage="lead">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>新開發</span><span class="count text-xs opacity-50">0</span></h2>
+            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>新開發</span> <span class="count text-xs">0</span></h2>
             <div id="lead-list" class="stage-list min-h-[300px]"></div>
         </div>
         <div class="kanban-column" data-stage="contacted">
-            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>洽談中</span><span class="count text-xs opacity-50">0</span></h2>
+            <h2 class="text-yellow-600 font-bold mb-4 flex justify-between"><span>洽談中</span> <span class="count text-xs">0</span></h2>
             <div id="contacted-list" class="stage-list min-h-[300px]"></div>
         </div>
         <div class="kanban-column" data-stage="won">
-            <h2 class="text-green-500 font-bold mb-4 flex justify-between"><span>已成交</span><span class="count text-xs opacity-50">0</span></h2>
+            <h2 class="text-green-500 font-bold mb-4 flex justify-between"><span>已成交</span> <span class="count text-xs">0</span></h2>
             <div id="won-list" class="stage-list min-h-[300px]"></div>
         </div>
     </div>
 
     <div id="details-modal">
-        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-xs rounded-2xl p-6 relative">
-            <h2 id="modal-name" class="text-2xl font-bold text-yellow-500 mb-4">詳情</h2>
-            <div class="space-y-4 text-sm" id="modal-content"></div>
-            <div class="mt-8 flex gap-2">
-                <button onclick="closeModal()" class="flex-1 py-3 rounded-lg bg-zinc-800 text-white">關閉</button>
-                <button id="modal-delete-btn" class="px-4 py-3 rounded-lg bg-red-900/20 text-red-500">刪除</button>
+        <div class="bg-zinc-900 border border-yellow-700 w-full max-w-xs rounded-3xl p-8 relative">
+            <div id="modal-status-tag" class="mb-2"></div>
+            <h2 id="m-name" class="text-3xl font-bold text-yellow-500 mb-6"></h2>
+            <div class="space-y-5 text-sm" id="m-body"></div>
+            <div class="mt-10 flex gap-3">
+                <button onclick="closeModal()" class="flex-1 py-4 rounded-2xl bg-zinc-800 text-white font-bold">關閉</button>
+                <button id="m-delete" class="px-6 py-4 rounded-2xl bg-red-900/20 text-red-500 font-bold">刪除</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 請務必正確填入您的 Firebase 配置 ---
+        // --- 請更換為您的 Firebase 配置 ---
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             databaseURL: "YOUR_DATABASE_URL",
             projectId: "YOUR_PROJECT_ID",
         };
 
-        // 初始化 Firebase 並攔截錯誤
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            showToast("系統已連結", "bg-green-900 text-green-200");
-        } catch (e) {
-            showToast("連結失敗：請檢查 Config", "bg-red-900 text-red-200");
-        }
-
+        // 1. 初始化環境
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         const leadsRef = db.ref('leads');
+        
+        // 本地主資料庫
+        let localData = JSON.parse(localStorage.getItem('empire_crm_data')) || {};
 
-        // 草稿還原與本地快照
-        window.onload = () => {
-            const savedDraft = localStorage.getItem('form_draft');
-            if (savedDraft) {
-                const draft = JSON.parse(savedDraft);
-                Object.keys(draft).forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = draft[id]; });
-            }
-            const backup = localStorage.getItem('local_leads_backup');
-            if (backup) renderLeads(JSON.parse(backup));
+        // 2. 頁面載入：優先渲染本地資料
+        window.addEventListener('DOMContentLoaded', () => {
+            renderUI(localData);
+            restoreDraft();
+            
+            // 隨後同步雲端資料
+            leadsRef.on('value', (snapshot) => {
+                const cloudData = snapshot.val() || {};
+                localData = cloudData;
+                saveToLocal();
+                renderUI(localData);
+                document.getElementById('connection-indicator').innerHTML = "🟢 雲端同步成功";
+            }, (error) => {
+                document.getElementById('connection-indicator').innerHTML = "🟡 離線模式：僅使用本地儲存";
+            });
+        });
+
+        // 3. 儲存邏輯 (本地優先)
+        document.getElementById('lead-form').onsubmit = function(e) {
+            e.preventDefault();
+            const id = 'lead_' + Date.now();
+            const newLead = {
+                id: id,
+                name: document.getElementById('name').value,
+                contact: document.getElementById('contact').value,
+                stage: document.getElementById('stage').value,
+                course: document.getElementById('course').value,
+                value: document.getElementById('value').value || 0,
+                sync: false // 標記尚未同步至雲端
+            };
+
+            // 立即存入本地並更新 UI
+            localData[id] = newLead;
+            saveToLocal();
+            renderUI(localData);
+            
+            // 嘗試寫入雲端
+            leadsRef.child(id).set(newLead).then(() => {
+                localData[id].sync = true;
+                saveToLocal();
+            });
+
+            // 清除草稿與重置
+            this.reset();
+            localStorage.removeItem('crm_draft');
+            document.getElementById('form-container').open = false;
         };
 
-        // 監聽草稿
-        document.querySelectorAll('.draft-sync').forEach(i => {
-            i.oninput = () => {
-                const d = {};
-                document.querySelectorAll('.draft-sync').forEach(inp => d[inp.id] = inp.value);
-                localStorage.setItem('form_draft', JSON.stringify(d));
+        // 4. 防閃退：草稿監聽
+        document.querySelectorAll('.draft-sync').forEach(input => {
+            input.oninput = () => {
+                const draft = {};
+                document.querySelectorAll('.draft-sync').forEach(i => draft[i.id] = i.value);
+                localStorage.setItem('crm_draft', JSON.stringify(draft));
+            };
+        });
+
+        function restoreDraft() {
+            const draft = JSON.parse(localStorage.getItem('crm_draft'));
+            if(draft) {
+                Object.keys(draft).forEach(id => {
+                    if(document.getElementById(id)) document.getElementById(id).value = draft[id];
+                });
+                if(draft.name) document.getElementById('form-container').open = true;
             }
-        });
+        }
 
-        // 讀取與渲染
-        leadsRef.on('value', (s) => {
-            const data = s.val() || {};
-            localStorage.setItem('local_leads_backup', JSON.stringify(data));
-            renderLeads(data);
-            document.getElementById('sync-status').innerText = "數據同步中：雲端已更新";
-        }, (err) => {
-            showToast("權限錯誤：請檢查 Firebase Rules", "bg-red-900 text-red-200");
-        });
-
-        function renderLeads(leads) {
+        // 5. 渲染函數
+        function renderUI(data) {
             document.querySelectorAll('.stage-list').forEach(el => el.innerHTML = '');
-            Object.keys(leads).forEach(id => {
-                const lead = leads[id];
+            Object.keys(data).forEach(id => {
+                const item = data[id];
                 const card = document.createElement('div');
                 card.className = 'customer-card';
                 card.dataset.id = id;
-                card.onclick = () => openModal(id, lead);
-                card.innerHTML = `<div class="flex justify-between font-bold"><span>${lead.name}</span><span class="text-yellow-600">$${Number(lead.value).toLocaleString()}</span></div>`;
-                const target = document.getElementById(`${lead.stage}-list`);
-                if (target) target.appendChild(card);
+                card.onclick = () => openModal(id, item);
+                card.innerHTML = `
+                    <div class="flex justify-between items-center font-bold">
+                        <span class="text-gray-100">${item.name}</span>
+                        <span class="text-yellow-600 text-sm">$${Number(item.value).toLocaleString()}</span>
+                    </div>
+                `;
+                const list = document.getElementById(`${item.stage}-list`);
+                if(list) list.appendChild(card);
             });
             updateCounts();
         }
 
-        // 寫入邏輯
-        document.getElementById('add-lead-form').onsubmit = function(e) {
-            e.preventDefault();
-            const newLead = {
-                name: document.getElementById('name').value,
-                contact: document.getElementById('contact').value,
-                stage: document.getElementById('stage-select').value,
-                course: document.getElementById('course').value,
-                value: document.getElementById('value').value || 0,
-                timestamp: Date.now()
-            };
-
-            leadsRef.push(newLead)
-                .then(() => {
-                    showToast("寫入成功", "bg-yellow-600 text-black");
-                    localStorage.removeItem('form_draft');
-                    this.reset();
-                    document.getElementById('form-details').open = false;
-                })
-                .catch(err => {
-                    alert("寫入失敗！請確認 Firebase 控制台的 Rules 是否設為 true。\n錯誤訊息：" + err.message);
-                });
-        };
-
-        function showToast(msg, colorClass) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.className = colorClass;
-            t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        function saveToLocal() {
+            localStorage.setItem('empire_crm_data', JSON.stringify(localData));
         }
 
-        function openModal(id, lead) {
-            document.getElementById('modal-name').innerText = lead.name;
-            document.getElementById('modal-content').innerHTML = `<p class='mb-2'>聯絡：${lead.contact}</p><p class='mb-2'>項目：${lead.course || '無'}</p><p class='text-yellow-500 font-bold'>金額：$${Number(lead.value).toLocaleString()}</p>`;
-            document.getElementById('modal-delete-btn').onclick = () => { if(confirm('刪除？')) { leadsRef.child(id).remove(); closeModal(); } };
-            document.getElementById('details-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
-        
         function updateCounts() {
             document.querySelectorAll('.kanban-column').forEach(col => {
                 col.querySelector('.count').innerText = col.querySelectorAll('.customer-card').length;
             });
         }
 
+        // 6. 詳情彈窗
+        function openModal(id, item) {
+            document.getElementById('m-name').innerText = item.name;
+            document.getElementById('modal-status-tag').innerHTML = item.sync ? 
+                '<span class="status-tag sync-cloud">雲端已加密</span>' : 
+                '<span class="status-tag sync-local">本地儲存中</span>';
+            
+            document.getElementById('m-body').innerHTML = `
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">聯絡電話/LINE</label><p class="text-lg text-white font-medium">${item.contact}</p></div>
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">預約項目</label><p class="text-white">${item.course || '專屬諮詢'}</p></div>
+                <div class="border-b border-zinc-800 pb-2"><label class="text-gray-500 text-xs tracking-widest">成交價值</label><p class="text-yellow-500 text-2xl font-black">$ ${Number(item.value).toLocaleString()}</p></div>
+            `;
+            
+            document.getElementById('m-delete').onclick = () => {
+                if(confirm('刪除將無法還原，確定？')) {
+                    delete localData[id];
+                    saveToLocal();
+                    leadsRef.child(id).remove();
+                    renderUI(localData);
+                    closeModal();
+                }
+            };
+            document.getElementById('details-modal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('details-modal').style.display = 'none'; }
+
+        // 拖拽同步更新
         document.querySelectorAll('.stage-list').forEach(list => {
-            new Sortable(list, { group: 'kanban', animation: 150, onEnd: (evt) => {
-                const id = evt.item.dataset.id;
-                const newStage = evt.to.parentElement.dataset.stage;
-                leadsRef.child(id).update({ stage: newStage });
-            }});
+            new Sortable(list, {
+                group: 'kanban', animation: 150,
+                onEnd: (evt) => {
+                    const id = evt.item.dataset.id;
+                    const newStage = evt.to.parentElement.dataset.stage;
+                    if(localData[id]) {
+                        localData[id].stage = newStage;
+                        saveToLocal();
+                        leadsRef.child(id).update({ stage: newStage });
+                        updateCounts();
+                    }
+                }
+            });
         });
     </script>
 </body>
